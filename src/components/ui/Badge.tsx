@@ -67,9 +67,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
+    minHeight: 24,
+    justifyContent: 'center',
   },
   text: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

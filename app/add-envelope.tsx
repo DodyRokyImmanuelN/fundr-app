@@ -2,16 +2,20 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
     Alert,
-    KeyboardAvoidingView,
-    Platform,
     Pressable,
-    ScrollView,
     StyleSheet,
     Text,
     TextInput,
     View,
 } from 'react-native';
 
+import { FormScreen } from '../src/components/layout/FormScreen';
+import { PageHeader } from '../src/components/layout/PageHeader';
+import { AppButton } from '../src/components/ui/AppButton';
+import { Card } from '../src/components/ui/Card';
+import { MoneyInput } from '../src/components/ui/MoneyInput';
+import { OptionRow } from '../src/components/ui/OptionRow';
+import { SectionHeader } from '../src/components/ui/SectionHeader';
 import { colors, radius, spacing, typography } from '../src/constants/theme';
 import { formatCurrency } from '../src/utils/currency';
 
@@ -159,240 +163,155 @@ export default function AddEnvelopeScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardView}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Add Envelope</Text>
-          <Text style={styles.subtitle}>
-            Create a new money pocket and fund it from an existing envelope.
-          </Text>
-        </View>
+    <FormScreen>
+      <PageHeader
+        title="Add Envelope"
+        subtitle="Create a new money pocket and fund it from an existing envelope."
+      />
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Envelope Details</Text>
+      <Card>
+        <SectionHeader title="Envelope Details" />
 
-          <Text style={styles.label}>Envelope name</Text>
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="e.g. Laundry, Internet, Pet Needs"
-            style={styles.input}
-          />
+        <Text style={styles.label}>Envelope name</Text>
+        <TextInput
+          value={name}
+          onChangeText={setName}
+          placeholder="e.g. Laundry, Internet, Pet Needs"
+          placeholderTextColor={colors.textMuted}
+          style={styles.input}
+        />
 
-          <Text style={styles.label}>Envelope type</Text>
-          <View style={styles.optionGrid}>
-            {envelopeTypes.map((item) => (
-              <Pressable
-                key={item}
-                onPress={() => setType(item)}
-                style={[
-                  styles.optionButton,
-                  type === item && styles.optionButtonActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    type === item && styles.optionTextActive,
-                  ]}
-                >
-                  {getEnvelopeTypeLabel(item)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Money Mode</Text>
-
-          <View style={styles.optionGrid}>
+        <Text style={styles.label}>Envelope type</Text>
+        <View style={styles.optionGrid}>
+          {envelopeTypes.map((item) => (
             <Pressable
-              onPress={() => setIsLocked(false)}
+              key={item}
+              onPress={() => setType(item)}
               style={[
                 styles.optionButton,
-                !isLocked && styles.optionButtonActive,
+                type === item && styles.optionButtonActive,
               ]}
             >
               <Text
                 style={[
                   styles.optionText,
-                  !isLocked && styles.optionTextActive,
+                  type === item && styles.optionTextActive,
                 ]}
               >
-                Flexible
+                {getEnvelopeTypeLabel(item)}
               </Text>
             </Pressable>
+          ))}
+        </View>
+      </Card>
 
-            <Pressable
-              onPress={() => setIsLocked(true)}
+      <Card>
+        <SectionHeader title="Money Mode" />
+
+        <View style={styles.optionGrid}>
+          <Pressable
+            onPress={() => setIsLocked(false)}
+            style={[
+              styles.optionButton,
+              !isLocked && styles.optionButtonActive,
+            ]}
+          >
+            <Text
               style={[
-                styles.optionButton,
-                isLocked && styles.optionButtonActive,
+                styles.optionText,
+                !isLocked && styles.optionTextActive,
               ]}
             >
-              <Text
-                style={[
-                  styles.optionText,
-                  isLocked && styles.optionTextActive,
-                ]}
-              >
-                Protected
-              </Text>
-            </Pressable>
-          </View>
-
-          <Text style={styles.helperText}>
-            Flexible envelopes can be used for daily expenses. Protected
-            envelopes are locked for savings, bills, or subscriptions.
-          </Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Account</Text>
-
-          <View style={styles.optionList}>
-            {accounts.map((account) => (
-              <Pressable
-                key={account.id}
-                onPress={() => handleSelectAccount(account.id)}
-                style={[
-                  styles.accountButton,
-                  selectedAccountId === account.id &&
-                    styles.optionButtonActive,
-                ]}
-              >
-                <View>
-                  <Text
-                    style={[
-                      styles.optionTitle,
-                      selectedAccountId === account.id &&
-                        styles.optionTextActive,
-                    ]}
-                  >
-                    {account.name}
-                  </Text>
-                  <Text style={styles.optionMeta}>
-                    Balance {formatCurrency(account.current_balance)}
-                  </Text>
-                </View>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Initial Allocation</Text>
-
-          <Text style={styles.label}>Amount</Text>
-          <TextInput
-            value={plannedAmount}
-            onChangeText={setPlannedAmount}
-            keyboardType="number-pad"
-            placeholder="e.g. 50000"
-            style={styles.amountInput}
-          />
-
-          <Text style={styles.label}>Fund from</Text>
-
-          {sourceEnvelopes.length === 0 ? (
-            <Text style={styles.helperText}>
-              No envelope with remaining money found for this account.
+              Flexible
             </Text>
-          ) : (
-            <View style={styles.optionList}>
-              {sourceEnvelopes.map((envelope) => (
-                <Pressable
-                  key={envelope.id}
-                  onPress={() => setSourceEnvelopeId(envelope.id)}
-                  style={[
-                    styles.accountButton,
-                    sourceEnvelopeId === envelope.id &&
-                      styles.optionButtonActive,
-                  ]}
-                >
-                  <View>
-                    <Text
-                      style={[
-                        styles.optionTitle,
-                        sourceEnvelopeId === envelope.id &&
-                          styles.optionTextActive,
-                      ]}
-                    >
-                      {envelope.name}
-                    </Text>
-                    <Text style={styles.optionMeta}>
-                      Remaining {formatCurrency(envelope.remaining_amount)}
-                    </Text>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          )}
+          </Pressable>
 
-          <Text style={styles.helperText}>
-            This will move money from the selected source envelope into your new
-            envelope. Total account balance will not change.
-          </Text>
+          <Pressable
+            onPress={() => setIsLocked(true)}
+            style={[
+              styles.optionButton,
+              isLocked && styles.optionButtonActive,
+            ]}
+          >
+            <Text
+              style={[
+                styles.optionText,
+                isLocked && styles.optionTextActive,
+              ]}
+            >
+              Protected
+            </Text>
+          </Pressable>
         </View>
 
-        <Pressable
-          onPress={handleSave}
-          disabled={isSaving || !selectedAccountId}
-          style={[
-            styles.submitButton,
-            (isSaving || !selectedAccountId) && styles.submitButtonDisabled,
-          ]}
-        >
-          <Text style={styles.submitButtonText}>
-            {isSaving ? 'Saving...' : 'Create Envelope'}
+        <Text style={styles.helperText}>
+          Flexible envelopes can be used for daily expenses. Protected envelopes
+          are locked for savings, bills, or subscriptions.
+        </Text>
+      </Card>
+
+      <Card>
+        <SectionHeader title="Account" />
+
+        <View style={styles.optionList}>
+          {accounts.map((account) => (
+            <OptionRow
+              key={account.id}
+              title={account.name}
+              meta={`Balance ${formatCurrency(account.current_balance)}`}
+              selected={selectedAccountId === account.id}
+              onPress={() => handleSelectAccount(account.id)}
+            />
+          ))}
+        </View>
+      </Card>
+
+      <Card>
+        <SectionHeader title="Initial Allocation" />
+
+        <Text style={styles.label}>Amount</Text>
+        <MoneyInput
+          value={plannedAmount}
+          onChangeText={setPlannedAmount}
+          placeholder="e.g. 50000"
+        />
+
+        <Text style={styles.label}>Fund from</Text>
+
+        {sourceEnvelopes.length === 0 ? (
+          <Text style={styles.helperText}>
+            No envelope with remaining money found for this account.
           </Text>
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        ) : (
+          <View style={styles.optionList}>
+            {sourceEnvelopes.map((envelope) => (
+              <OptionRow
+                key={envelope.id}
+                title={envelope.name}
+                meta={`Remaining ${formatCurrency(envelope.remaining_amount)}`}
+                selected={sourceEnvelopeId === envelope.id}
+                onPress={() => setSourceEnvelopeId(envelope.id)}
+              />
+            ))}
+          </View>
+        )}
+
+        <Text style={styles.helperText}>
+          This will move money from the selected source envelope into your new
+          envelope. Total account balance will not change.
+        </Text>
+      </Card>
+
+      <AppButton
+        label={isSaving ? 'Saving...' : 'Create Envelope'}
+        onPress={handleSave}
+        disabled={isSaving || !selectedAccountId}
+      />
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardView: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    padding: spacing.xl,
-    paddingTop: spacing['3xl'],
-    gap: spacing.lg,
-  },
-  header: {
-    gap: spacing.xs,
-  },
-  title: {
-    fontSize: typography.title,
-    fontWeight: '900',
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: typography.body,
-    color: colors.textSecondary,
-    lineHeight: 22,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: typography.subheading,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
   label: {
     fontSize: typography.small,
     fontWeight: '700',
@@ -400,22 +319,11 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     fontSize: typography.body,
-    color: colors.textPrimary,
-    backgroundColor: colors.surface,
-  },
-  amountInput: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    fontSize: 26,
-    fontWeight: '800',
     color: colors.textPrimary,
     backgroundColor: colors.surface,
   },
@@ -440,16 +348,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  accountButton: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-  },
   optionButtonActive: {
     borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.primaryMuted,
   },
   optionText: {
     fontSize: typography.small,
@@ -458,29 +359,5 @@ const styles = StyleSheet.create({
   },
   optionTextActive: {
     color: colors.primary,
-  },
-  optionTitle: {
-    fontSize: typography.body,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
-  optionMeta: {
-    marginTop: 2,
-    fontSize: typography.small,
-    color: colors.textSecondary,
-  },
-  submitButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: typography.body,
-    fontWeight: '800',
   },
 });

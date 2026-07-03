@@ -1,12 +1,11 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
-    Alert,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 
 import { FormScreen } from '../src/components/layout/FormScreen';
@@ -17,59 +16,29 @@ import { MoneyInput } from '../src/components/ui/MoneyInput';
 import { OptionRow } from '../src/components/ui/OptionRow';
 import { SectionHeader } from '../src/components/ui/SectionHeader';
 import { colors, radius, spacing, typography } from '../src/constants/theme';
-import { formatCurrency } from '../src/utils/currency';
-
 import {
-    Account,
-    getActiveAccounts,
+  Account,
+  getActiveAccounts,
 } from '../src/features/accounts/account.repository';
-
 import {
-    EnvelopeWithAccount,
-    getActiveCycleEnvelopes,
+  EnvelopeWithAccount,
+  getActiveCycleEnvelopes,
 } from '../src/features/envelopes/envelope.repository';
-
-import { createIncomeTransaction } from '../src/services/moneyService';
-
-type MoneySource = 'freelance' | 'gift' | 'bonus' | 'refund' | 'other';
-
-const moneySources: MoneySource[] = [
-  'freelance',
-  'gift',
-  'bonus',
-  'refund',
-  'other',
-];
+import { adjustAccountBalance } from '../src/services/balanceAdjustmentService';
+import { formatCurrency } from '../src/utils/currency';
 
 function parseMoney(value: string) {
   const numericValue = value.replace(/[^0-9]/g, '');
   return Number(numericValue || 0);
 }
 
-function getSourceLabel(source: MoneySource) {
-  switch (source) {
-    case 'freelance':
-      return 'Freelance';
-    case 'gift':
-      return 'Gift';
-    case 'bonus':
-      return 'Bonus';
-    case 'refund':
-      return 'Refund';
-    default:
-      return 'Other';
-  }
-}
-
-export default function AddMoneyScreen() {
+export default function AdjustBalanceScreen() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [envelopes, setEnvelopes] = useState<EnvelopeWithAccount[]>([]);
 
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [selectedEnvelopeId, setSelectedEnvelopeId] = useState('');
-
-  const [amount, setAmount] = useState('');
-  const [source, setSource] = useState<MoneySource>('freelance');
+  const [actualBalanceInput, setActualBalanceInput] = useState('');
   const [note, setNote] = useState('');
 
   const [isSaving, setIsSaving] = useState(false);
@@ -104,6 +73,10 @@ export default function AddMoneyScreen() {
     }, [selectedAccountId])
   );
 
+  const selectedAccount = accounts.find(
+    (account) => account.id === selectedAccountId
+  );
+
   const filteredEnvelopes = useMemo(() => {
     return envelopes.filter(
       (envelope) => envelope.account_id === selectedAccountId
@@ -113,6 +86,14 @@ export default function AddMoneyScreen() {
   const selectedEnvelope = envelopes.find(
     (envelope) => envelope.id === selectedEnvelopeId
   );
+
+  const actualBalance = parseMoney(actualBalanceInput);
+  const hasActualBalance = actualBalanceInput.trim().length > 0;
+  const difference = selectedAccount
+    ? actualBalance - selectedAccount.current_balance
+    : 0;
+  const isIncrease = difference > 0;
+  const isDecrease = difference < 0;
 
   function handleSelectAccount(accountId: string) {
     setSelectedAccountId(accountId);
@@ -128,18 +109,17 @@ export default function AddMoneyScreen() {
     try {
       setIsSaving(true);
 
-      await createIncomeTransaction({
+      await adjustAccountBalance({
         accountId: selectedAccountId,
         envelopeId: selectedEnvelopeId,
-        amount: parseMoney(amount),
-        source,
+        actualBalance,
         note,
       });
 
       router.back();
     } catch (error) {
       Alert.alert(
-        'Add Money Error',
+        'Adjust Balance Error',
         error instanceof Error ? error.message : 'Something went wrong'
       );
     } finally {
@@ -147,52 +127,19 @@ export default function AddMoneyScreen() {
     }
   }
 
+  const isSubmitDisabled =
+    isSaving ||
+    !selectedAccountId ||
+    !selectedEnvelopeId ||
+    !hasActualBalance ||
+    difference === 0;
+
   return (
     <FormScreen>
       <PageHeader
-        title="Add Money"
-        subtitle="Record new money and place it directly into an envelope."
+        title="Adjust Balance"
+        subtitle="Match Fundr with your real account balance when there is a difference."
       />
-
-      <Card>
-        <SectionHeader title="Amount" />
-
-        <MoneyInput
-          value={amount}
-          onChangeText={setAmount}
-          placeholder="e.g. 1000000"
-        />
-
-        <Text style={styles.helperText}>
-          Example: input 1000000 for Rp1.000.000.
-        </Text>
-      </Card>
-
-      <Card>
-        <SectionHeader title="Source" />
-
-        <View style={styles.optionGrid}>
-          {moneySources.map((item) => (
-            <Pressable
-              key={item}
-              onPress={() => setSource(item)}
-              style={[
-                styles.optionButton,
-                source === item && styles.optionButtonActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.optionText,
-                  source === item && styles.optionTextActive,
-                ]}
-              >
-                {getSourceLabel(item)}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </Card>
 
       <Card>
         <SectionHeader title="Account" />
@@ -202,7 +149,7 @@ export default function AddMoneyScreen() {
             <OptionRow
               key={account.id}
               title={account.name}
-              meta={`Current balance ${formatCurrency(account.current_balance)}`}
+              meta={`Fundr balance ${formatCurrency(account.current_balance)}`}
               selected={selectedAccountId === account.id}
               onPress={() => handleSelectAccount(account.id)}
             />
@@ -211,12 +158,69 @@ export default function AddMoneyScreen() {
       </Card>
 
       <Card>
-        <SectionHeader title="Allocate To" />
+        <SectionHeader title="Real Balance" />
+
+        <MoneyInput
+          value={actualBalanceInput}
+          onChangeText={setActualBalanceInput}
+          placeholder="e.g. 430000"
+        />
+
+        <Text style={styles.helperText}>
+          Enter the current balance shown by your bank, wallet, or cash count.
+        </Text>
+      </Card>
+
+      <Card style={styles.summaryCard}>
+        <SectionHeader title="Difference" />
+
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Fundr</Text>
+          <Text style={styles.summaryValue}>
+            {formatCurrency(selectedAccount?.current_balance ?? 0)}
+          </Text>
+        </View>
+
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Actual</Text>
+          <Text style={styles.summaryValue}>
+            {hasActualBalance ? formatCurrency(actualBalance) : '-'}
+          </Text>
+        </View>
+
+        <View style={styles.summaryDivider} />
+
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Adjustment</Text>
+          <Text
+            style={[
+              styles.differenceValue,
+              isIncrease && styles.increaseText,
+              isDecrease && styles.decreaseText,
+            ]}
+          >
+            {hasActualBalance
+              ? `${isIncrease ? '+' : isDecrease ? '-' : ''}${formatCurrency(
+                  Math.abs(difference)
+                )}`
+              : '-'}
+          </Text>
+        </View>
+
+        <Text style={styles.helperText}>
+          {hasActualBalance && isIncrease
+            ? 'Fundr will add this difference to the selected envelope.'
+            : hasActualBalance && isDecrease
+              ? 'Fundr will reduce this difference from the selected envelope.'
+              : 'Input your real balance to calculate the adjustment.'}
+        </Text>
+      </Card>
+
+      <Card>
+        <SectionHeader title="Envelope" />
 
         {filteredEnvelopes.length === 0 ? (
-          <Text style={styles.helperText}>
-            No envelope found for this account. Create an envelope first.
-          </Text>
+          <Text style={styles.helperText}>No envelope found for this account.</Text>
         ) : (
           <View style={styles.optionList}>
             {filteredEnvelopes.map((envelope) => (
@@ -233,7 +237,11 @@ export default function AddMoneyScreen() {
 
         {selectedEnvelope ? (
           <Text style={styles.helperText}>
-            This money will increase {selectedEnvelope.name}.
+            {isIncrease
+              ? `This adjustment will increase ${selectedEnvelope.name}.`
+              : isDecrease
+                ? `This adjustment will reduce ${selectedEnvelope.name}.`
+                : `${selectedEnvelope.name} will absorb the difference.`}
           </Text>
         ) : null}
       </Card>
@@ -244,16 +252,16 @@ export default function AddMoneyScreen() {
         <TextInput
           value={note}
           onChangeText={setNote}
-          placeholder="e.g. freelance payment, refund, bonus"
+          placeholder="e.g. bank balance reconciliation"
           placeholderTextColor={colors.textMuted}
           style={styles.input}
         />
       </Card>
 
       <AppButton
-        label={isSaving ? 'Saving...' : 'Save Money'}
+        label={isSaving ? 'Saving...' : 'Save Adjustment'}
         onPress={handleSave}
-        disabled={isSaving || !selectedAccountId || !selectedEnvelopeId}
+        disabled={isSubmitDisabled}
       />
     </FormScreen>
   );
@@ -275,37 +283,39 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     lineHeight: 20,
   },
-  optionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
   optionList: {
     gap: spacing.sm,
   },
-  optionButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+  summaryCard: {
     backgroundColor: colors.surface,
   },
-  optionButtonActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryMuted,
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
   },
-  optionText: {
+  summaryLabel: {
     fontSize: typography.small,
+    color: colors.textSecondary,
+  },
+  summaryValue: {
+    fontSize: typography.body,
     fontWeight: '800',
-    color: colors.textSecondary,
+    color: colors.textPrimary,
   },
-  optionTextActive: {
-    color: colors.primary,
+  summaryDivider: {
+    height: 1,
+    backgroundColor: colors.border,
   },
-  optionMeta: {
-    marginTop: 2,
-    fontSize: typography.small,
-    color: colors.textSecondary,
+  differenceValue: {
+    fontSize: typography.body,
+    fontWeight: '900',
+    color: colors.textPrimary,
+  },
+  increaseText: {
+    color: colors.success,
+  },
+  decreaseText: {
+    color: colors.danger,
   },
 });

@@ -1,25 +1,31 @@
 export const colors = {
-  background: '#F6F7F9',
+  background: '#F7F8FA',
   surface: '#FFFFFF',
-  surfaceMuted: '#EEF1F5',
+  surfaceMuted: '#F0F3F7',
+  surfacePressed: '#E9EEF5',
 
-  textPrimary: '#101828',
-  textSecondary: '#667085',
-  textMuted: '#98A2B3',
+  textPrimary: '#111827',
+  textSecondary: '#4B5563',
+  textMuted: '#9CA3AF',
 
-  border: '#EAECF0',
+  border: '#E5E7EB',
+  borderStrong: '#D1D5DB',
 
   primary: '#2563EB',
   primarySoft: '#DBEAFE',
+  primaryMuted: '#EFF6FF',
 
   success: '#16A34A',
   successSoft: '#DCFCE7',
+  successMuted: '#F0FDF4',
 
   warning: '#D97706',
   warningSoft: '#FEF3C7',
+  warningMuted: '#FFFBEB',
 
   danger: '#DC2626',
   dangerSoft: '#FEE2E2',
+  dangerMuted: '#FEF2F2',
 };
 
 export const Colors = {
@@ -52,10 +58,10 @@ export const spacing = {
 };
 
 export const radius = {
-  sm: 10,
-  md: 14,
-  lg: 18,
-  xl: 24,
+  sm: 6,
+  md: 8,
+  lg: 8,
+  xl: 8,
 };
 
 export const typography = {
@@ -65,4 +71,24 @@ export const typography = {
   body: 15,
   small: 13,
   tiny: 12,
+};
+
+export const layout = {
+  screenPadding: spacing.xl,
+  screenTopPadding: spacing['3xl'],
+  sectionGap: spacing.lg,
+  controlHeight: 52,
+};
+
+export const shadows = {
+  card: {
+    shadowColor: '#111827',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 1,
+  },
 };

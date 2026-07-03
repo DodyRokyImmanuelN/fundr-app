@@ -1,10 +1,14 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { PageHeader } from '../../src/components/layout/PageHeader';
+import { Screen } from '../../src/components/layout/Screen';
 import { MoneyCard } from '../../src/components/dashboard/MoneyCard';
+import { AppButton } from '../../src/components/ui/AppButton';
 import { Badge } from '../../src/components/ui/Badge';
 import { Card } from '../../src/components/ui/Card';
+import { SectionHeader } from '../../src/components/ui/SectionHeader';
 
 import { colors, spacing, typography } from '../../src/constants/theme';
 import { getDatabase } from '../../src/db/database';
@@ -133,33 +137,27 @@ export default function DashboardScreen() {
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.appName}>Fundr</Text>
-          <Text style={styles.subtitle}>Your money, planned clearly.</Text>
-        </View>
+    <Screen>
+      <PageHeader
+        title="Fundr"
+        subtitle="Your money, planned clearly."
+        trailing={<Badge label="Safe" variant="safe" />}
+      />
 
-        <Badge label="Safe" variant="safe" />
-      </View>
+      <Card style={styles.heroCard}>
+        <SectionHeader title="Safe Daily Limit" meta={`${remainingDays} days left`} />
 
-      <Card>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Active Cycle</Text>
-          <Text style={styles.sectionMeta}>{remainingDays} days left</Text>
-        </View>
+        <Text style={styles.safeLimit}>{formatCurrency(safeDailyLimit)}</Text>
 
-        <Text style={styles.cycleName}>{cycle?.name ?? 'No active cycle'}</Text>
+        <Text style={styles.mutedText}>
+          Keep spending below this amount today to keep the cycle safe.
+        </Text>
 
         {cycle ? (
-          <Text style={styles.mutedText}>
+          <Text style={styles.cycleMeta}>
             {cycle.start_date} - {cycle.end_date}
           </Text>
-        ) : (
-          <Text style={styles.mutedText}>
-            Confirm your income to start a budget cycle.
-          </Text>
-        )}
+        ) : null}
       </Card>
 
       <View style={styles.moneyGrid}>
@@ -167,30 +165,42 @@ export default function DashboardScreen() {
           label="Flexible Money"
           amount={flexibleMoney}
           description="Money available for this cycle"
+          tone="neutral"
         />
 
         <MoneyCard
           label="Protected Money"
           amount={protectedMoney}
           description="Savings, subscriptions, and locked funds"
+          tone="success"
         />
       </View>
 
       <Card>
-        <Text style={styles.sectionTitle}>Safe Daily Limit</Text>
-
-        <Text style={styles.safeLimit}>{formatCurrency(safeDailyLimit)}</Text>
-
-        <Text style={styles.mutedText}>
-          Keep today’s spending below this amount to stay on track.
-        </Text>
+        <SectionHeader title="Quick Actions" />
+        <View style={styles.actionGrid}>
+          <AppButton
+            label="Add Expense"
+            onPress={() => router.push('/add-transaction')}
+            style={styles.actionButton}
+          />
+          <AppButton
+            label="Add Money"
+            variant="success"
+            onPress={() => router.push('/add-money')}
+            style={styles.actionButton}
+          />
+          <AppButton
+            label="Adjust Balance"
+            variant="warning"
+            onPress={() => router.push('/adjust-balance')}
+            style={styles.actionButtonWide}
+          />
+        </View>
       </Card>
 
       <Card>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Accounts</Text>
-          <Text style={styles.sectionMeta}>{accounts.length} active</Text>
-        </View>
+        <SectionHeader title="Accounts" meta={`${accounts.length} active`} />
 
         {accounts.length === 0 ? (
           <Text style={styles.mutedText}>No account found.</Text>
@@ -215,7 +225,7 @@ export default function DashboardScreen() {
       </Card>
 
       <Card>
-        <Text style={styles.sectionTitle}>Assistant Summary</Text>
+        <SectionHeader title="Assistant Summary" />
 
         <Text style={styles.assistantText}>
           You are still on track. Keep spending below{' '}
@@ -223,77 +233,46 @@ export default function DashboardScreen() {
           today to keep this cycle safe.
         </Text>
       </Card>
-
-      <Pressable
-        onPress={() => router.push('/add-transaction')}
-        style={styles.addButton}
-      >
-        <Text style={styles.addButtonText}>Add Expense</Text>
-      </Pressable>
-    </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: spacing.xl,
-    paddingTop: spacing['3xl'],
-    gap: spacing.lg,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-  },
-  appName: {
-    fontSize: typography.title,
-    fontWeight: '900',
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    marginTop: spacing.xs,
-    fontSize: typography.body,
-    color: colors.textSecondary,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: typography.subheading,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
-  sectionMeta: {
-    fontSize: typography.small,
-    color: colors.textMuted,
-  },
-  cycleName: {
-    fontSize: typography.body,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
+  heroCard: {
+    backgroundColor: colors.primaryMuted,
+    borderColor: colors.primarySoft,
   },
   mutedText: {
     fontSize: typography.small,
     color: colors.textSecondary,
     lineHeight: 20,
   },
+  cycleMeta: {
+    fontSize: typography.tiny,
+    color: colors.textMuted,
+    fontWeight: '700',
+  },
   moneyGrid: {
     flexDirection: 'row',
     gap: spacing.md,
   },
   safeLimit: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
     fontSize: 34,
     fontWeight: '900',
     color: colors.primary,
+  },
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  actionButton: {
+    flexGrow: 1,
+    flexBasis: '45%',
+  },
+  actionButtonWide: {
+    flexGrow: 1,
+    flexBasis: '100%',
   },
   accountList: {
     gap: spacing.md,
@@ -326,7 +305,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   assistantText: {
-    marginTop: spacing.sm,
     fontSize: typography.body,
     color: colors.textSecondary,
     lineHeight: 22,
@@ -334,16 +312,5 @@ const styles = StyleSheet.create({
   boldText: {
     fontWeight: '800',
     color: colors.textPrimary,
-  },
-  addButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 18,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontSize: typography.body,
-    fontWeight: '800',
   },
 });
