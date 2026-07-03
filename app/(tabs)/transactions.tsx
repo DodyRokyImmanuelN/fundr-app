@@ -26,7 +26,21 @@ function getTransactionTitle(transaction: TransactionWithDetails) {
     }
   }
 
+  if (transaction.type === 'adjustment') {
+    return transaction.category === 'balance_increase'
+      ? 'Balance Adjustment'
+      : 'Balance Correction';
+  }
+
   return transaction.envelope_name ?? transaction.category ?? 'Expense';
+}
+
+function isPositiveTransaction(transaction: TransactionWithDetails) {
+  return (
+    transaction.type === 'income' ||
+    (transaction.type === 'adjustment' &&
+      transaction.category === 'balance_increase')
+  );
 }
 
 export default function TransactionsScreen() {
@@ -68,6 +82,13 @@ export default function TransactionsScreen() {
         >
           <Text style={styles.actionButtonText}>Add Money</Text>
         </Pressable>
+
+        <Pressable
+          onPress={() => router.push('/adjust-balance')}
+          style={[styles.actionButton, styles.adjustButton]}
+        >
+          <Text style={styles.actionButtonText}>Adjust Balance</Text>
+        </Pressable>
       </View>
 
       {transactions.length === 0 ? (
@@ -80,7 +101,7 @@ export default function TransactionsScreen() {
       ) : (
         <View style={styles.transactionList}>
           {transactions.map((transaction) => {
-            const isIncome = transaction.type === 'income';
+            const isPositive = isPositiveTransaction(transaction);
 
             return (
               <Card key={transaction.id}>
@@ -110,10 +131,10 @@ export default function TransactionsScreen() {
                   <Text
                     style={[
                       styles.transactionAmount,
-                      isIncome ? styles.incomeAmount : styles.expenseAmount,
+                      isPositive ? styles.incomeAmount : styles.expenseAmount,
                     ]}
                   >
-                    {isIncome ? '+' : '-'}
+                    {isPositive ? '+' : '-'}
                     {formatCurrency(transaction.amount)}
                   </Text>
                 </View>
@@ -151,10 +172,12 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.md,
   },
   actionButton: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: '45%',
     borderRadius: 18,
     paddingVertical: spacing.lg,
     alignItems: 'center',
@@ -164,6 +187,9 @@ const styles = StyleSheet.create({
   },
   moneyButton: {
     backgroundColor: colors.success,
+  },
+  adjustButton: {
+    backgroundColor: colors.warning,
   },
   actionButtonText: {
     color: '#FFFFFF',
