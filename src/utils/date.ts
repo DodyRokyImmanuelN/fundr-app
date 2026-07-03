@@ -15,3 +15,8 @@ export function getRemainingDays(endDate: string) {
 
   return Math.max(diffDays + 1, 1);
 }
+export function addDaysISO(dateString: string, days: number) {
+  const date = new Date(dateString);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}

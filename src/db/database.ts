@@ -7,7 +7,7 @@ export async function getDatabase() {
     return database;
   }
 
-  database = await SQLite.openDatabaseAsync('fundr.db');
+  database = await SQLite.openDatabaseAsync('fundr_dev_v2.db');
 
   await database.execAsync(`
     PRAGMA foreign_keys = ON;
