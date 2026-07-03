@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { MoneyCard } from '../../src/components/dashboard/MoneyCard';
+import { Badge } from '../../src/components/ui/Badge';
+import { Card } from '../../src/components/ui/Card';
+
+import { colors, spacing, typography } from '../../src/constants/theme';
 import { getDatabase } from '../../src/db/database';
-import { formatCurrency } from '../../src/utils/currency';
 import { calculateSafeDailyLimit } from '../../src/utils/calculations';
+import { formatCurrency } from '../../src/utils/currency';
 import { getRemainingDays } from '../../src/utils/date';
 
 type AccountRow = {
@@ -119,103 +124,196 @@ export default function DashboardScreen() {
   }, []);
 
   return (
-    <ScrollView
-      contentContainerStyle={{
-        padding: 20,
-        gap: 16,
-      }}
-    >
-      <Text style={{ fontSize: 32, fontWeight: '800' }}>Fundr</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.appName}>Fundr</Text>
+          <Text style={styles.subtitle}>Your money, planned clearly.</Text>
+        </View>
 
-      <View
-        style={{
-          padding: 16,
-          borderRadius: 16,
-          backgroundColor: '#f2f2f2',
-          gap: 8,
-        }}
-      >
-        <Text style={{ fontSize: 16, fontWeight: '700' }}>
-          Active Cycle
-        </Text>
+        <Badge label="Safe" variant="safe" />
+      </View>
 
-        <Text>{cycle?.name ?? 'No active cycle'}</Text>
+      <Card>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Active Cycle</Text>
+          <Text style={styles.sectionMeta}>{remainingDays} days left</Text>
+        </View>
 
-        {cycle && (
-          <Text>
+        <Text style={styles.cycleName}>{cycle?.name ?? 'No active cycle'}</Text>
+
+        {cycle ? (
+          <Text style={styles.mutedText}>
             {cycle.start_date} - {cycle.end_date}
           </Text>
+        ) : (
+          <Text style={styles.mutedText}>
+            Confirm your income to start a budget cycle.
+          </Text>
         )}
+      </Card>
+
+      <View style={styles.moneyGrid}>
+        <MoneyCard
+          label="Flexible Money"
+          amount={flexibleMoney}
+          description="Money available for this cycle"
+        />
+
+        <MoneyCard
+          label="Protected Money"
+          amount={protectedMoney}
+          description="Savings, subscriptions, and locked funds"
+        />
       </View>
 
-      <View
-        style={{
-          padding: 16,
-          borderRadius: 16,
-          backgroundColor: '#f2f2f2',
-          gap: 8,
-        }}
-      >
-        <Text style={{ fontSize: 16, fontWeight: '700' }}>
-          Money Summary
+      <Card>
+        <Text style={styles.sectionTitle}>Safe Daily Limit</Text>
+
+        <Text style={styles.safeLimit}>{formatCurrency(safeDailyLimit)}</Text>
+
+        <Text style={styles.mutedText}>
+          Keep today’s spending below this amount to stay on track.
         </Text>
+      </Card>
 
-        <Text>Flexible Money: {formatCurrency(flexibleMoney)}</Text>
-        <Text>Protected Money: {formatCurrency(protectedMoney)}</Text>
-        <Text>Days Left: {remainingDays}</Text>
-        <Text>Safe Daily Limit: {formatCurrency(safeDailyLimit)}</Text>
-      </View>
-
-      <View
-        style={{
-          padding: 16,
-          borderRadius: 16,
-          backgroundColor: '#f2f2f2',
-          gap: 12,
-        }}
-      >
-        <Text style={{ fontSize: 16, fontWeight: '700' }}>Accounts</Text>
+      <Card>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Accounts</Text>
+          <Text style={styles.sectionMeta}>{accounts.length} active</Text>
+        </View>
 
         {accounts.length === 0 ? (
-          <Text>No account found.</Text>
+          <Text style={styles.mutedText}>No account found.</Text>
         ) : (
-          accounts.map((account) => (
-            <View
-              key={account.id}
-              style={{
-                paddingVertical: 8,
-                borderBottomWidth: 1,
-                borderBottomColor: '#ddd',
-                gap: 2,
-              }}
-            >
-              <Text style={{ fontWeight: '700' }}>{account.name}</Text>
-              <Text>{getAccountTypeLabel(account.type)}</Text>
-              <Text>{formatCurrency(account.current_balance)}</Text>
-            </View>
-          ))
+          <View style={styles.accountList}>
+            {accounts.map((account) => (
+              <View key={account.id} style={styles.accountItem}>
+                <View>
+                  <Text style={styles.accountName}>{account.name}</Text>
+                  <Text style={styles.accountType}>
+                    {getAccountTypeLabel(account.type)}
+                  </Text>
+                </View>
+
+                <Text style={styles.accountBalance}>
+                  {formatCurrency(account.current_balance)}
+                </Text>
+              </View>
+            ))}
+          </View>
         )}
-      </View>
+      </Card>
 
-      <View
-        style={{
-          padding: 16,
-          borderRadius: 16,
-          backgroundColor: '#f2f2f2',
-          gap: 8,
-        }}
-      >
-        <Text style={{ fontSize: 16, fontWeight: '700' }}>
-          Assistant Summary
+      <Card>
+        <Text style={styles.sectionTitle}>Assistant Summary</Text>
+
+        <Text style={styles.assistantText}>
+          You are still on track. Keep spending below{' '}
+          <Text style={styles.boldText}>{formatCurrency(safeDailyLimit)}</Text>{' '}
+          today to keep this cycle safe.
         </Text>
-
-        <Text>Status: Safe</Text>
-
-        <Text>
-          Suggestion: Keep your spending below{' '}
-          {formatCurrency(safeDailyLimit)} today.
-        </Text>
-      </View>
+      </Card>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    padding: spacing.xl,
+    paddingTop: spacing['3xl'],
+    gap: spacing.lg,
+    backgroundColor: colors.background,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  appName: {
+    fontSize: typography.title,
+    fontWeight: '900',
+    color: colors.textPrimary,
+  },
+  subtitle: {
+    marginTop: spacing.xs,
+    fontSize: typography.body,
+    color: colors.textSecondary,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  sectionTitle: {
+    fontSize: typography.subheading,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  sectionMeta: {
+    fontSize: typography.small,
+    color: colors.textMuted,
+  },
+  cycleName: {
+    fontSize: typography.body,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  mutedText: {
+    fontSize: typography.small,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  moneyGrid: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  safeLimit: {
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+    fontSize: 34,
+    fontWeight: '900',
+    color: colors.primary,
+  },
+  accountList: {
+    gap: spacing.md,
+  },
+  accountItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  accountName: {
+    fontSize: typography.body,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  accountType: {
+    marginTop: 2,
+    fontSize: typography.small,
+    color: colors.textSecondary,
+  },
+  accountBalance: {
+    fontSize: typography.body,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  assistantText: {
+    marginTop: spacing.sm,
+    fontSize: typography.body,
+    color: colors.textSecondary,
+    lineHeight: 22,
+  },
+  boldText: {
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+});
