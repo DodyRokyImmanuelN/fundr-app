@@ -2,16 +2,19 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 
+import { FormScreen } from '../src/components/layout/FormScreen';
+import { PageHeader } from '../src/components/layout/PageHeader';
+import { AppButton } from '../src/components/ui/AppButton';
+import { Card } from '../src/components/ui/Card';
+import { MoneyInput } from '../src/components/ui/MoneyInput';
+import { OptionRow } from '../src/components/ui/OptionRow';
+import { SectionHeader } from '../src/components/ui/SectionHeader';
 import { colors, radius, spacing, typography } from '../src/constants/theme';
 import { formatCurrency } from '../src/utils/currency';
 
@@ -119,191 +122,95 @@ export default function AddTransactionScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardView}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Add Expense</Text>
-          <Text style={styles.subtitle}>
-            Record daily spending and update your envelope automatically.
-          </Text>
+    <FormScreen>
+      <PageHeader
+        title="Add Expense"
+        subtitle="Record daily spending and update your envelope automatically."
+      />
+
+      <Card>
+        <SectionHeader title="Amount" />
+
+        <MoneyInput
+          value={amount}
+          onChangeText={setAmount}
+          placeholder="e.g. 20000"
+        />
+
+        <Text style={styles.helperText}>
+          Input numbers only. Example: 20000 for Rp20.000.
+        </Text>
+      </Card>
+
+      <Card>
+        <SectionHeader title="Account" />
+
+        <View style={styles.optionList}>
+          {accounts.map((account) => (
+            <OptionRow
+              key={account.id}
+              title={account.name}
+              meta={formatCurrency(account.current_balance)}
+              selected={selectedAccountId === account.id}
+              onPress={() => handleSelectAccount(account.id)}
+            />
+          ))}
         </View>
+      </Card>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Amount</Text>
+      <Card>
+        <SectionHeader title="Envelope" />
 
-          <TextInput
-            value={amount}
-            onChangeText={setAmount}
-            keyboardType="number-pad"
-            placeholder="e.g. 20000"
-            style={styles.amountInput}
-          />
-
+        {filteredEnvelopes.length === 0 ? (
           <Text style={styles.helperText}>
-            Input numbers only. Example: 20000 for Rp20.000.
+            No spendable envelope found for this account.
           </Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Account</Text>
-
+        ) : (
           <View style={styles.optionList}>
-            {accounts.map((account) => (
-              <Pressable
-                key={account.id}
-                onPress={() => handleSelectAccount(account.id)}
-                style={[
-                  styles.optionButton,
-                  selectedAccountId === account.id && styles.optionButtonActive,
-                ]}
-              >
-                <View>
-                  <Text
-                    style={[
-                      styles.optionTitle,
-                      selectedAccountId === account.id &&
-                        styles.optionTitleActive,
-                    ]}
-                  >
-                    {account.name}
-                  </Text>
-                  <Text style={styles.optionMeta}>
-                    {formatCurrency(account.current_balance)}
-                  </Text>
-                </View>
-              </Pressable>
+            {filteredEnvelopes.map((envelope) => (
+              <OptionRow
+                key={envelope.id}
+                title={envelope.name}
+                meta={`Remaining ${formatCurrency(envelope.remaining_amount)}`}
+                selected={selectedEnvelopeId === envelope.id}
+                onPress={() => setSelectedEnvelopeId(envelope.id)}
+              />
             ))}
           </View>
-        </View>
+        )}
+      </Card>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Envelope</Text>
+      <Card>
+        <SectionHeader title="Note" />
 
-          {filteredEnvelopes.length === 0 ? (
-            <Text style={styles.helperText}>
-              No spendable envelope found for this account.
-            </Text>
-          ) : (
-            <View style={styles.optionList}>
-              {filteredEnvelopes.map((envelope) => (
-                <Pressable
-                  key={envelope.id}
-                  onPress={() => setSelectedEnvelopeId(envelope.id)}
-                  style={[
-                    styles.optionButton,
-                    selectedEnvelopeId === envelope.id &&
-                      styles.optionButtonActive,
-                  ]}
-                >
-                  <View>
-                    <Text
-                      style={[
-                        styles.optionTitle,
-                        selectedEnvelopeId === envelope.id &&
-                          styles.optionTitleActive,
-                      ]}
-                    >
-                      {envelope.name}
-                    </Text>
-                    <Text style={styles.optionMeta}>
-                      Remaining {formatCurrency(envelope.remaining_amount)}
-                    </Text>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          )}
-        </View>
+        <TextInput
+          value={note}
+          onChangeText={setNote}
+          placeholder="e.g. Just Coffee, lunch, parking"
+          placeholderTextColor={colors.textMuted}
+          style={styles.input}
+        />
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Note</Text>
-
-          <TextInput
-            value={note}
-            onChangeText={setNote}
-            placeholder="e.g. Just Coffee, lunch, parking"
-            style={styles.input}
-          />
-
-          {selectedEnvelope ? (
-            <Text style={styles.helperText}>
-              This expense will be recorded under {selectedEnvelope.name}.
-            </Text>
-          ) : null}
-        </View>
-
-        <Pressable
-          onPress={handleSave}
-          disabled={isSaving || !selectedAccountId || !selectedEnvelopeId}
-          style={[
-            styles.submitButton,
-            (isSaving || !selectedAccountId || !selectedEnvelopeId) &&
-              styles.submitButtonDisabled,
-          ]}
-        >
-          <Text style={styles.submitButtonText}>
-            {isSaving ? 'Saving...' : 'Save Expense'}
+        {selectedEnvelope ? (
+          <Text style={styles.helperText}>
+            This expense will be recorded under {selectedEnvelope.name}.
           </Text>
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        ) : null}
+      </Card>
+
+      <AppButton
+        label={isSaving ? 'Saving...' : 'Save Expense'}
+        onPress={handleSave}
+        disabled={isSaving || !selectedAccountId || !selectedEnvelopeId}
+      />
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardView: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    padding: spacing.xl,
-    paddingTop: spacing['3xl'],
-    gap: spacing.lg,
-  },
-  header: {
-    gap: spacing.xs,
-  },
-  title: {
-    fontSize: typography.title,
-    fontWeight: '900',
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: typography.body,
-    color: colors.textSecondary,
-    lineHeight: 22,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: typography.subheading,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  amountInput: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    backgroundColor: colors.surface,
-  },
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
@@ -318,43 +225,5 @@ const styles = StyleSheet.create({
   },
   optionList: {
     gap: spacing.sm,
-  },
-  optionButton: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-  },
-  optionButtonActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
-  },
-  optionTitle: {
-    fontSize: typography.body,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
-  optionTitleActive: {
-    color: colors.primary,
-  },
-  optionMeta: {
-    marginTop: 2,
-    fontSize: typography.small,
-    color: colors.textSecondary,
-  },
-  submitButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: typography.body,
-    fontWeight: '800',
   },
 });

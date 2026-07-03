@@ -1,7 +1,10 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { PageHeader } from '../../src/components/layout/PageHeader';
+import { Screen } from '../../src/components/layout/Screen';
+import { AppButton } from '../../src/components/ui/AppButton';
 import { Card } from '../../src/components/ui/Card';
 import { colors, spacing, typography } from '../../src/constants/theme';
 import {
@@ -58,41 +61,36 @@ export default function TransactionsScreen() {
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          <Text style={styles.title}>Transactions</Text>
-          <Text style={styles.subtitle}>
-            Track expenses and extra money recorded in Fundr.
-          </Text>
-        </View>
-      </View>
+    <Screen>
+      <PageHeader
+        title="Transactions"
+        subtitle="Track expenses, extra money, and balance corrections."
+      />
 
       <View style={styles.actionRow}>
-        <Pressable
+        <AppButton
+          label="Add Expense"
           onPress={() => router.push('/add-transaction')}
           style={[styles.actionButton, styles.expenseButton]}
-        >
-          <Text style={styles.actionButtonText}>Add Expense</Text>
-        </Pressable>
+        />
 
-        <Pressable
+        <AppButton
+          label="Add Money"
+          variant="success"
           onPress={() => router.push('/add-money')}
           style={[styles.actionButton, styles.moneyButton]}
-        >
-          <Text style={styles.actionButtonText}>Add Money</Text>
-        </Pressable>
+        />
 
-        <Pressable
+        <AppButton
+          label="Adjust Balance"
+          variant="warning"
           onPress={() => router.push('/adjust-balance')}
           style={[styles.actionButton, styles.adjustButton]}
-        >
-          <Text style={styles.actionButtonText}>Adjust Balance</Text>
-        </Pressable>
+        />
       </View>
 
       {transactions.length === 0 ? (
-        <Card>
+        <Card muted>
           <Text style={styles.emptyTitle}>No transaction yet</Text>
           <Text style={styles.mutedText}>
             Add your first expense or money in to start tracking your money flow.
@@ -143,33 +141,11 @@ export default function TransactionsScreen() {
           })}
         </View>
       )}
-    </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: spacing.xl,
-    paddingTop: spacing['3xl'],
-    gap: spacing.lg,
-    backgroundColor: colors.background,
-  },
-  header: {
-    gap: spacing.md,
-  },
-  headerText: {
-    gap: spacing.xs,
-  },
-  title: {
-    fontSize: typography.title,
-    fontWeight: '900',
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: typography.body,
-    color: colors.textSecondary,
-    lineHeight: 22,
-  },
   actionRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -178,9 +154,6 @@ const styles = StyleSheet.create({
   actionButton: {
     flexGrow: 1,
     flexBasis: '45%',
-    borderRadius: 18,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
   },
   expenseButton: {
     backgroundColor: colors.primary,
@@ -190,11 +163,7 @@ const styles = StyleSheet.create({
   },
   adjustButton: {
     backgroundColor: colors.warning,
-  },
-  actionButtonText: {
-    color: '#FFFFFF',
-    fontSize: typography.body,
-    fontWeight: '800',
+    flexBasis: '100%',
   },
   emptyTitle: {
     fontSize: typography.subheading,

@@ -1,10 +1,14 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { PageHeader } from '../../src/components/layout/PageHeader';
+import { Screen } from '../../src/components/layout/Screen';
+import { AppButton } from '../../src/components/ui/AppButton';
 import { Badge } from '../../src/components/ui/Badge';
 import { Card } from '../../src/components/ui/Card';
 import { ProgressBar } from '../../src/components/ui/ProgressBar';
+import { SectionHeader } from '../../src/components/ui/SectionHeader';
 
 import {
   EnvelopeWithAccount,
@@ -154,13 +158,11 @@ export default function EnvelopesScreen() {
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Envelopes</Text>
-        <Text style={styles.subtitle}>
-          See how your money is separated by purpose.
-        </Text>
-      </View>
+    <Screen>
+      <PageHeader
+        title="Envelopes"
+        subtitle="See how your money is separated by purpose."
+      />
 
       {isLoading ? (
         <Card>
@@ -168,7 +170,7 @@ export default function EnvelopesScreen() {
         </Card>
       ) : envelopes.length === 0 ? (
         <>
-          <Card>
+          <Card muted>
             <Text style={styles.emptyTitle}>No envelope found</Text>
             <Text style={styles.mutedText}>
               Complete onboarding or confirm an income to create your first
@@ -176,12 +178,10 @@ export default function EnvelopesScreen() {
             </Text>
           </Card>
 
-          <Pressable
+          <AppButton
+            label="Add Envelope"
             onPress={() => router.push('/add-envelope')}
-            style={styles.addButton}
-          >
-            <Text style={styles.addButtonText}>Add Envelope</Text>
-          </Pressable>
+          />
         </>
       ) : (
         <>
@@ -204,12 +204,10 @@ export default function EnvelopesScreen() {
           </View>
 
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Flexible Envelopes</Text>
-              <Text style={styles.sectionMeta}>
-                {flexibleEnvelopes.length} items
-              </Text>
-            </View>
+            <SectionHeader
+              title="Flexible Envelopes"
+              meta={`${flexibleEnvelopes.length} items`}
+            />
 
             {flexibleEnvelopes.length === 0 ? (
               <Card>
@@ -226,12 +224,10 @@ export default function EnvelopesScreen() {
           </View>
 
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Protected Envelopes</Text>
-              <Text style={styles.sectionMeta}>
-                {protectedEnvelopes.length} items
-              </Text>
-            </View>
+            <SectionHeader
+              title="Protected Envelopes"
+              meta={`${protectedEnvelopes.length} items`}
+            />
 
             {protectedEnvelopes.length === 0 ? (
               <Card>
@@ -247,38 +243,17 @@ export default function EnvelopesScreen() {
             )}
           </View>
 
-          <Pressable
+          <AppButton
+            label="Add Envelope"
             onPress={() => router.push('/add-envelope')}
-            style={styles.addButton}
-          >
-            <Text style={styles.addButtonText}>Add Envelope</Text>
-          </Pressable>
+          />
         </>
       )}
-    </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: spacing.xl,
-    paddingTop: spacing['3xl'],
-    gap: spacing.lg,
-    backgroundColor: colors.background,
-  },
-  header: {
-    gap: spacing.xs,
-  },
-  title: {
-    fontSize: typography.title,
-    fontWeight: '900',
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: typography.body,
-    color: colors.textSecondary,
-    lineHeight: 22,
-  },
   summaryGrid: {
     flexDirection: 'row',
     gap: spacing.md,
@@ -296,20 +271,6 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: spacing.md,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    fontSize: typography.subheading,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
-  sectionMeta: {
-    fontSize: typography.small,
-    color: colors.textMuted,
   },
   envelopeHeader: {
     flexDirection: 'row',
@@ -372,16 +333,5 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.textPrimary,
     marginBottom: spacing.xs,
-  },
-  addButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 18,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontSize: typography.body,
-    fontWeight: '800',
   },
 });

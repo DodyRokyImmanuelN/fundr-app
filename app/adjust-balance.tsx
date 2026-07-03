@@ -2,16 +2,19 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 
+import { FormScreen } from '../src/components/layout/FormScreen';
+import { PageHeader } from '../src/components/layout/PageHeader';
+import { AppButton } from '../src/components/ui/AppButton';
+import { Card } from '../src/components/ui/Card';
+import { MoneyInput } from '../src/components/ui/MoneyInput';
+import { OptionRow } from '../src/components/ui/OptionRow';
+import { SectionHeader } from '../src/components/ui/SectionHeader';
 import { colors, radius, spacing, typography } from '../src/constants/theme';
 import {
   Account,
@@ -132,240 +135,142 @@ export default function AdjustBalanceScreen() {
     difference === 0;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardView}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Adjust Balance</Text>
-          <Text style={styles.subtitle}>
-            Match Fundr with your real account balance when there is a
-            difference.
+    <FormScreen>
+      <PageHeader
+        title="Adjust Balance"
+        subtitle="Match Fundr with your real account balance when there is a difference."
+      />
+
+      <Card>
+        <SectionHeader title="Account" />
+
+        <View style={styles.optionList}>
+          {accounts.map((account) => (
+            <OptionRow
+              key={account.id}
+              title={account.name}
+              meta={`Fundr balance ${formatCurrency(account.current_balance)}`}
+              selected={selectedAccountId === account.id}
+              onPress={() => handleSelectAccount(account.id)}
+            />
+          ))}
+        </View>
+      </Card>
+
+      <Card>
+        <SectionHeader title="Real Balance" />
+
+        <MoneyInput
+          value={actualBalanceInput}
+          onChangeText={setActualBalanceInput}
+          placeholder="e.g. 430000"
+        />
+
+        <Text style={styles.helperText}>
+          Enter the current balance shown by your bank, wallet, or cash count.
+        </Text>
+      </Card>
+
+      <Card style={styles.summaryCard}>
+        <SectionHeader title="Difference" />
+
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Fundr</Text>
+          <Text style={styles.summaryValue}>
+            {formatCurrency(selectedAccount?.current_balance ?? 0)}
           </Text>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Account</Text>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Actual</Text>
+          <Text style={styles.summaryValue}>
+            {hasActualBalance ? formatCurrency(actualBalance) : '-'}
+          </Text>
+        </View>
 
+        <View style={styles.summaryDivider} />
+
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Adjustment</Text>
+          <Text
+            style={[
+              styles.differenceValue,
+              isIncrease && styles.increaseText,
+              isDecrease && styles.decreaseText,
+            ]}
+          >
+            {hasActualBalance
+              ? `${isIncrease ? '+' : isDecrease ? '-' : ''}${formatCurrency(
+                  Math.abs(difference)
+                )}`
+              : '-'}
+          </Text>
+        </View>
+
+        <Text style={styles.helperText}>
+          {hasActualBalance && isIncrease
+            ? 'Fundr will add this difference to the selected envelope.'
+            : hasActualBalance && isDecrease
+              ? 'Fundr will reduce this difference from the selected envelope.'
+              : 'Input your real balance to calculate the adjustment.'}
+        </Text>
+      </Card>
+
+      <Card>
+        <SectionHeader title="Envelope" />
+
+        {filteredEnvelopes.length === 0 ? (
+          <Text style={styles.helperText}>No envelope found for this account.</Text>
+        ) : (
           <View style={styles.optionList}>
-            {accounts.map((account) => (
-              <Pressable
-                key={account.id}
-                onPress={() => handleSelectAccount(account.id)}
-                style={[
-                  styles.optionButton,
-                  selectedAccountId === account.id && styles.optionButtonActive,
-                ]}
-              >
-                <View>
-                  <Text
-                    style={[
-                      styles.optionTitle,
-                      selectedAccountId === account.id &&
-                        styles.optionTitleActive,
-                    ]}
-                  >
-                    {account.name}
-                  </Text>
-                  <Text style={styles.optionMeta}>
-                    Fundr balance {formatCurrency(account.current_balance)}
-                  </Text>
-                </View>
-              </Pressable>
+            {filteredEnvelopes.map((envelope) => (
+              <OptionRow
+                key={envelope.id}
+                title={envelope.name}
+                meta={`Remaining ${formatCurrency(envelope.remaining_amount)}`}
+                selected={selectedEnvelopeId === envelope.id}
+                onPress={() => setSelectedEnvelopeId(envelope.id)}
+              />
             ))}
           </View>
-        </View>
+        )}
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Real Balance</Text>
-
-          <TextInput
-            value={actualBalanceInput}
-            onChangeText={setActualBalanceInput}
-            keyboardType="number-pad"
-            placeholder="e.g. 430000"
-            style={styles.amountInput}
-          />
-
+        {selectedEnvelope ? (
           <Text style={styles.helperText}>
-            Enter the current balance shown by your bank, wallet, or cash count.
+            {isIncrease
+              ? `This adjustment will increase ${selectedEnvelope.name}.`
+              : isDecrease
+                ? `This adjustment will reduce ${selectedEnvelope.name}.`
+                : `${selectedEnvelope.name} will absorb the difference.`}
           </Text>
-        </View>
+        ) : null}
+      </Card>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Difference</Text>
+      <Card>
+        <SectionHeader title="Note" />
 
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Fundr</Text>
-            <Text style={styles.summaryValue}>
-              {formatCurrency(selectedAccount?.current_balance ?? 0)}
-            </Text>
-          </View>
+        <TextInput
+          value={note}
+          onChangeText={setNote}
+          placeholder="e.g. bank balance reconciliation"
+          placeholderTextColor={colors.textMuted}
+          style={styles.input}
+        />
+      </Card>
 
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Actual</Text>
-            <Text style={styles.summaryValue}>
-              {hasActualBalance ? formatCurrency(actualBalance) : '-'}
-            </Text>
-          </View>
-
-          <View style={styles.summaryDivider} />
-
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Adjustment</Text>
-            <Text
-              style={[
-                styles.differenceValue,
-                isIncrease && styles.increaseText,
-                isDecrease && styles.decreaseText,
-              ]}
-            >
-              {hasActualBalance
-                ? `${isIncrease ? '+' : isDecrease ? '-' : ''}${formatCurrency(
-                    Math.abs(difference)
-                  )}`
-                : '-'}
-            </Text>
-          </View>
-
-          <Text style={styles.helperText}>
-            {hasActualBalance && isIncrease
-              ? 'Fundr will add this difference to the selected envelope.'
-              : hasActualBalance && isDecrease
-                ? 'Fundr will reduce this difference from the selected envelope.'
-                : 'Input your real balance to calculate the adjustment.'}
-          </Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Envelope</Text>
-
-          {filteredEnvelopes.length === 0 ? (
-            <Text style={styles.helperText}>
-              No envelope found for this account.
-            </Text>
-          ) : (
-            <View style={styles.optionList}>
-              {filteredEnvelopes.map((envelope) => (
-                <Pressable
-                  key={envelope.id}
-                  onPress={() => setSelectedEnvelopeId(envelope.id)}
-                  style={[
-                    styles.optionButton,
-                    selectedEnvelopeId === envelope.id &&
-                      styles.optionButtonActive,
-                  ]}
-                >
-                  <View>
-                    <Text
-                      style={[
-                        styles.optionTitle,
-                        selectedEnvelopeId === envelope.id &&
-                          styles.optionTitleActive,
-                      ]}
-                    >
-                      {envelope.name}
-                    </Text>
-                    <Text style={styles.optionMeta}>
-                      Remaining {formatCurrency(envelope.remaining_amount)}
-                    </Text>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          )}
-
-          {selectedEnvelope ? (
-            <Text style={styles.helperText}>
-              {isIncrease
-                ? `This adjustment will increase ${selectedEnvelope.name}.`
-                : isDecrease
-                  ? `This adjustment will reduce ${selectedEnvelope.name}.`
-                  : `${selectedEnvelope.name} will absorb the difference.`}
-            </Text>
-          ) : null}
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Note</Text>
-
-          <TextInput
-            value={note}
-            onChangeText={setNote}
-            placeholder="e.g. bank balance reconciliation"
-            style={styles.input}
-          />
-        </View>
-
-        <Pressable
-          onPress={handleSave}
-          disabled={isSubmitDisabled}
-          style={[
-            styles.submitButton,
-            isSubmitDisabled && styles.submitButtonDisabled,
-          ]}
-        >
-          <Text style={styles.submitButtonText}>
-            {isSaving ? 'Saving...' : 'Save Adjustment'}
-          </Text>
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <AppButton
+        label={isSaving ? 'Saving...' : 'Save Adjustment'}
+        onPress={handleSave}
+        disabled={isSubmitDisabled}
+      />
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardView: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    padding: spacing.xl,
-    paddingTop: spacing['3xl'],
-    gap: spacing.lg,
-  },
-  header: {
-    gap: spacing.xs,
-  },
-  title: {
-    fontSize: typography.title,
-    fontWeight: '900',
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: typography.body,
-    color: colors.textSecondary,
-    lineHeight: 22,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: typography.subheading,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  amountInput: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    backgroundColor: colors.surface,
-  },
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
@@ -381,29 +286,8 @@ const styles = StyleSheet.create({
   optionList: {
     gap: spacing.sm,
   },
-  optionButton: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.md,
+  summaryCard: {
     backgroundColor: colors.surface,
-  },
-  optionButtonActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
-  },
-  optionTitle: {
-    fontSize: typography.body,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
-  optionTitleActive: {
-    color: colors.primary,
-  },
-  optionMeta: {
-    marginTop: 2,
-    fontSize: typography.small,
-    color: colors.textSecondary,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -433,19 +317,5 @@ const styles = StyleSheet.create({
   },
   decreaseText: {
     color: colors.danger,
-  },
-  submitButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: typography.body,
-    fontWeight: '800',
   },
 });

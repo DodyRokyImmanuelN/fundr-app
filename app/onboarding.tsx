@@ -2,16 +2,19 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 
+import { FormScreen } from '../src/components/layout/FormScreen';
+import { PageHeader } from '../src/components/layout/PageHeader';
+import { AppButton } from '../src/components/ui/AppButton';
+import { Card } from '../src/components/ui/Card';
+import { MoneyInput } from '../src/components/ui/MoneyInput';
+import { SectionHeader } from '../src/components/ui/SectionHeader';
 import { colors, radius, spacing, typography } from '../src/constants/theme';
 import { completeOnboarding } from '../src/features/onboarding/onboarding.service';
 
@@ -63,173 +66,121 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardView}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.appName}>Fundr</Text>
-          <Text style={styles.title}>Set up your money system</Text>
-          <Text style={styles.subtitle}>
-            Create your first accounts, income source, and budget cycle.
-          </Text>
-        </View>
+    <FormScreen>
+      <PageHeader
+        title="Fundr"
+        subtitle="Set up your first accounts, income source, and budget cycle."
+      />
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Profile</Text>
+      <Card>
+        <SectionHeader title="Profile" />
 
-          <Text style={styles.label}>Your name</Text>
-          <TextInput
-            value={userName}
-            onChangeText={setUserName}
-            placeholder="e.g. Dody"
-            style={styles.input}
-          />
-        </View>
+        <Text style={styles.label}>Your name</Text>
+        <TextInput
+          value={userName}
+          onChangeText={setUserName}
+          placeholder="e.g. Dody"
+          placeholderTextColor={colors.textMuted}
+          style={styles.input}
+        />
+      </Card>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Accounts</Text>
+      <Card>
+        <SectionHeader title="Accounts" />
 
-          <Text style={styles.label}>Daily spending account</Text>
-          <TextInput
-            value={spendingAccountName}
-            onChangeText={setSpendingAccountName}
-            placeholder="e.g. BCA, Mandiri, GoPay, Cash"
-            style={styles.input}
-          />
+        <Text style={styles.label}>Daily spending account</Text>
+        <TextInput
+          value={spendingAccountName}
+          onChangeText={setSpendingAccountName}
+          placeholder="e.g. BCA, Mandiri, GoPay, Cash"
+          placeholderTextColor={colors.textMuted}
+          style={styles.input}
+        />
 
-          <Text style={styles.label}>Saving / protected account</Text>
-          <TextInput
-            value={savingAccountName}
-            onChangeText={setSavingAccountName}
-            placeholder="e.g. SeaBank, Jago, Savings"
-            style={styles.input}
-          />
-        </View>
+        <Text style={styles.label}>Saving / protected account</Text>
+        <TextInput
+          value={savingAccountName}
+          onChangeText={setSavingAccountName}
+          placeholder="e.g. SeaBank, Jago, Savings"
+          placeholderTextColor={colors.textMuted}
+          style={styles.input}
+        />
+      </Card>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Income</Text>
+      <Card>
+        <SectionHeader title="Income" />
 
-          <Text style={styles.label}>Income name</Text>
-          <TextInput
-            value={incomeName}
-            onChangeText={setIncomeName}
-            placeholder="e.g. Weekly allowance, salary, freelance"
-            style={styles.input}
-          />
+        <Text style={styles.label}>Income name</Text>
+        <TextInput
+          value={incomeName}
+          onChangeText={setIncomeName}
+          placeholder="e.g. Weekly allowance, salary, freelance"
+          placeholderTextColor={colors.textMuted}
+          style={styles.input}
+        />
 
-          <Text style={styles.label}>Income amount</Text>
-          <TextInput
-            value={incomeAmount}
-            onChangeText={setIncomeAmount}
-            keyboardType="number-pad"
-            placeholder="850000"
-            style={styles.input}
-          />
+        <Text style={styles.label}>Income amount</Text>
+        <MoneyInput
+          value={incomeAmount}
+          onChangeText={setIncomeAmount}
+          placeholder="850000"
+          style={styles.compactMoneyInput}
+        />
 
-          <Text style={styles.label}>Income frequency</Text>
-          <View style={styles.frequencyGrid}>
-            {(['weekly', 'biweekly', 'monthly', 'irregular'] as Frequency[]).map(
-              (frequency) => (
-                <Pressable
-                  key={frequency}
-                  onPress={() => setIncomeFrequency(frequency)}
+        <Text style={styles.label}>Income frequency</Text>
+        <View style={styles.frequencyGrid}>
+          {(['weekly', 'biweekly', 'monthly', 'irregular'] as Frequency[]).map(
+            (frequency) => (
+              <Pressable
+                key={frequency}
+                onPress={() => setIncomeFrequency(frequency)}
+                style={[
+                  styles.frequencyButton,
+                  incomeFrequency === frequency && styles.frequencyButtonActive,
+                ]}
+              >
+                <Text
                   style={[
-                    styles.frequencyButton,
+                    styles.frequencyText,
                     incomeFrequency === frequency &&
-                      styles.frequencyButtonActive,
+                      styles.frequencyTextActive,
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.frequencyText,
-                      incomeFrequency === frequency &&
-                        styles.frequencyTextActive,
-                    ]}
-                  >
-                    {frequency}
-                  </Text>
-                </Pressable>
-              )
-            )}
-          </View>
+                  {frequency}
+                </Text>
+              </Pressable>
+            )
+          )}
         </View>
+      </Card>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Allocation</Text>
+      <Card>
+        <SectionHeader title="Allocation" />
 
-          <Text style={styles.label}>Amount to protect / save</Text>
-          <TextInput
-            value={savingAmount}
-            onChangeText={setSavingAmount}
-            keyboardType="number-pad"
-            placeholder="350000"
-            style={styles.input}
-          />
+        <Text style={styles.label}>Amount to protect / save</Text>
+        <MoneyInput
+          value={savingAmount}
+          onChangeText={setSavingAmount}
+          placeholder="350000"
+          style={styles.compactMoneyInput}
+        />
 
-          <Text style={styles.helperText}>
-            The remaining income will become flexible money for your current
-            budget cycle.
-          </Text>
-        </View>
+        <Text style={styles.helperText}>
+          The remaining income will become flexible money for your current
+          budget cycle.
+        </Text>
+      </Card>
 
-        <Pressable
-          onPress={handleSubmit}
-          disabled={isSaving}
-          style={[styles.submitButton, isSaving && styles.submitButtonDisabled]}
-        >
-          <Text style={styles.submitButtonText}>
-            {isSaving ? 'Creating Fundr...' : 'Create My Budget'}
-          </Text>
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <AppButton
+        label={isSaving ? 'Creating Fundr...' : 'Create My Budget'}
+        onPress={handleSubmit}
+        disabled={isSaving}
+      />
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardView: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    padding: spacing.xl,
-    paddingTop: spacing['3xl'],
-    gap: spacing.lg,
-  },
-  header: {
-    gap: spacing.xs,
-  },
-  appName: {
-    fontSize: typography.title,
-    fontWeight: '900',
-    color: colors.textPrimary,
-  },
-  title: {
-    fontSize: typography.heading,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: typography.body,
-    color: colors.textSecondary,
-    lineHeight: 22,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: typography.subheading,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-  },
   label: {
     fontSize: typography.small,
     fontWeight: '700',
@@ -237,13 +188,16 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     fontSize: typography.body,
     color: colors.textPrimary,
     backgroundColor: colors.surface,
+  },
+  compactMoneyInput: {
+    fontSize: typography.heading,
   },
   helperText: {
     fontSize: typography.small,
@@ -265,7 +219,7 @@ const styles = StyleSheet.create({
   },
   frequencyButtonActive: {
     borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.primaryMuted,
   },
   frequencyText: {
     fontSize: typography.small,
@@ -275,19 +229,5 @@ const styles = StyleSheet.create({
   },
   frequencyTextActive: {
     color: colors.primary,
-  },
-  submitButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: typography.body,
-    fontWeight: '800',
   },
 });
