@@ -10,6 +10,25 @@ import {
 } from '../../src/features/transactions/transaction.repository';
 import { formatCurrency } from '../../src/utils/currency';
 
+function getTransactionTitle(transaction: TransactionWithDetails) {
+  if (transaction.type === 'income') {
+    switch (transaction.category) {
+      case 'freelance':
+        return 'Freelance Income';
+      case 'gift':
+        return 'Gift';
+      case 'bonus':
+        return 'Bonus';
+      case 'refund':
+        return 'Refund';
+      default:
+        return 'Money In';
+    }
+  }
+
+  return transaction.envelope_name ?? transaction.category ?? 'Expense';
+}
+
 export default function TransactionsScreen() {
   const [transactions, setTransactions] = useState<TransactionWithDetails[]>([]);
 
@@ -27,18 +46,27 @@ export default function TransactionsScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerText}>
           <Text style={styles.title}>Transactions</Text>
           <Text style={styles.subtitle}>
-            Track expenses recorded in your active budget cycle.
+            Track expenses and extra money recorded in Fundr.
           </Text>
         </View>
+      </View>
 
+      <View style={styles.actionRow}>
         <Pressable
           onPress={() => router.push('/add-transaction')}
-          style={styles.headerButton}
+          style={[styles.actionButton, styles.expenseButton]}
         >
-          <Text style={styles.headerButtonText}>Add</Text>
+          <Text style={styles.actionButtonText}>Add Expense</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => router.push('/add-money')}
+          style={[styles.actionButton, styles.moneyButton]}
+        >
+          <Text style={styles.actionButtonText}>Add Money</Text>
         </Pressable>
       </View>
 
@@ -46,32 +74,52 @@ export default function TransactionsScreen() {
         <Card>
           <Text style={styles.emptyTitle}>No transaction yet</Text>
           <Text style={styles.mutedText}>
-            Add your first expense to start tracking your money flow.
+            Add your first expense or money in to start tracking your money flow.
           </Text>
         </Card>
       ) : (
         <View style={styles.transactionList}>
-          {transactions.map((transaction) => (
-            <Card key={transaction.id}>
-              <View style={styles.transactionItem}>
-                <View style={styles.transactionInfo}>
-                  <Text style={styles.transactionTitle}>
-                    {transaction.envelope_name ?? transaction.category ?? 'Expense'}
-                  </Text>
-                  <Text style={styles.transactionMeta}>
-                    {transaction.account_name} · {transaction.date}
-                  </Text>
-                  {transaction.note ? (
-                    <Text style={styles.transactionNote}>{transaction.note}</Text>
-                  ) : null}
-                </View>
+          {transactions.map((transaction) => {
+            const isIncome = transaction.type === 'income';
 
-                <Text style={styles.transactionAmount}>
-                  -{formatCurrency(transaction.amount)}
-                </Text>
-              </View>
-            </Card>
-          ))}
+            return (
+              <Card key={transaction.id}>
+                <View style={styles.transactionItem}>
+                  <View style={styles.transactionInfo}>
+                    <Text style={styles.transactionTitle}>
+                      {getTransactionTitle(transaction)}
+                    </Text>
+
+                    <Text style={styles.transactionMeta}>
+                      {transaction.account_name} · {transaction.date}
+                    </Text>
+
+                    {transaction.envelope_name ? (
+                      <Text style={styles.transactionMeta}>
+                        Envelope: {transaction.envelope_name}
+                      </Text>
+                    ) : null}
+
+                    {transaction.note ? (
+                      <Text style={styles.transactionNote}>
+                        {transaction.note}
+                      </Text>
+                    ) : null}
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.transactionAmount,
+                      isIncome ? styles.incomeAmount : styles.expenseAmount,
+                    ]}
+                  >
+                    {isIncome ? '+' : '-'}
+                    {formatCurrency(transaction.amount)}
+                  </Text>
+                </View>
+              </Card>
+            );
+          })}
         </View>
       )}
     </ScrollView>
@@ -86,10 +134,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
     gap: spacing.md,
+  },
+  headerText: {
+    gap: spacing.xs,
   },
   title: {
     fontSize: typography.title,
@@ -97,19 +145,29 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   subtitle: {
-    marginTop: spacing.xs,
     fontSize: typography.body,
     color: colors.textSecondary,
     lineHeight: 22,
   },
-  headerButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+  actionRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
   },
-  headerButtonText: {
+  actionButton: {
+    flex: 1,
+    borderRadius: 18,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+  },
+  expenseButton: {
+    backgroundColor: colors.primary,
+  },
+  moneyButton: {
+    backgroundColor: colors.success,
+  },
+  actionButtonText: {
     color: '#FFFFFF',
+    fontSize: typography.body,
     fontWeight: '800',
   },
   emptyTitle: {
@@ -152,6 +210,11 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontSize: typography.body,
     fontWeight: '900',
+  },
+  incomeAmount: {
+    color: colors.success,
+  },
+  expenseAmount: {
     color: colors.danger,
   },
 });

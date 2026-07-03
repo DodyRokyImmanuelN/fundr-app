@@ -62,6 +62,7 @@ export default function RootLayout() {
       name="add-transaction"
       options={{ title: 'Add Transaction' }}
     />
+    <Stack.Screen name="add-money" options={{ title: 'Add Money' }} />
     <Stack.Screen name="add-envelope" options={{ title: 'Add Envelope' }} />
     <Stack.Screen
       name="decision-assistant"
