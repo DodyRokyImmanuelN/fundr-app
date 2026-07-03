@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { MoneyCard } from '../../src/components/dashboard/MoneyCard';
 import { Badge } from '../../src/components/ui/Badge';
@@ -53,75 +54,83 @@ export default function DashboardScreen() {
   const [flexibleMoney, setFlexibleMoney] = useState(0);
   const [protectedMoney, setProtectedMoney] = useState(0);
 
-  useEffect(() => {
-    async function loadDashboard() {
-      const db = await getDatabase();
+  useFocusEffect(
+    useCallback(() => {
+      async function loadDashboard() {
+        const db = await getDatabase();
 
-      const accountRows = await db.getAllAsync<AccountRow>(
-        `
-        SELECT id, name, type, current_balance
-        FROM accounts
-        WHERE is_archived = 0
-        ORDER BY
-          CASE type
-            WHEN 'daily_spending' THEN 1
-            WHEN 'saving' THEN 2
-            WHEN 'cash' THEN 3
-            WHEN 'ewallet' THEN 4
-            ELSE 5
-          END,
-          name ASC;
-        `
-      );
-
-      const activeCycle = await db.getFirstAsync<CycleRow>(
-        `
-        SELECT id, name, start_date, end_date, actual_amount
-        FROM budget_cycles
-        WHERE status = 'active'
-        LIMIT 1;
-        `
-      );
-
-      if (activeCycle) {
-        const flexibleMoneyRow = await db.getFirstAsync<MoneySummaryRow>(
+        const accountRows = await db.getAllAsync<AccountRow>(
           `
-          SELECT COALESCE(SUM(remaining_amount), 0) as total
-          FROM envelopes
-          WHERE budget_cycle_id = ?
-          AND is_locked = 0;
-          `,
-          [activeCycle.id]
-        );
-
-        const protectedMoneyRow = await db.getFirstAsync<MoneySummaryRow>(
+          SELECT id, name, type, current_balance
+          FROM accounts
+          WHERE is_archived = 0
+          ORDER BY
+            CASE type
+              WHEN 'daily_spending' THEN 1
+              WHEN 'saving' THEN 2
+              WHEN 'cash' THEN 3
+              WHEN 'ewallet' THEN 4
+              ELSE 5
+            END,
+            name ASC;
           `
-          SELECT COALESCE(SUM(remaining_amount), 0) as total
-          FROM envelopes
-          WHERE budget_cycle_id = ?
-          AND is_locked = 1;
-          `,
-          [activeCycle.id]
         );
 
-        const daysLeft = getRemainingDays(activeCycle.end_date);
-        const limit = calculateSafeDailyLimit(
-          flexibleMoneyRow?.total ?? 0,
-          daysLeft
+        const activeCycle = await db.getFirstAsync<CycleRow>(
+          `
+          SELECT id, name, start_date, end_date, actual_amount
+          FROM budget_cycles
+          WHERE status = 'active'
+          LIMIT 1;
+          `
         );
 
-        setCycle(activeCycle);
-        setRemainingDays(daysLeft);
-        setSafeDailyLimit(limit);
-        setFlexibleMoney(flexibleMoneyRow?.total ?? 0);
-        setProtectedMoney(protectedMoneyRow?.total ?? 0);
+        if (activeCycle) {
+          const flexibleMoneyRow = await db.getFirstAsync<MoneySummaryRow>(
+            `
+            SELECT COALESCE(SUM(remaining_amount), 0) as total
+            FROM envelopes
+            WHERE budget_cycle_id = ?
+            AND is_locked = 0;
+            `,
+            [activeCycle.id]
+          );
+
+          const protectedMoneyRow = await db.getFirstAsync<MoneySummaryRow>(
+            `
+            SELECT COALESCE(SUM(remaining_amount), 0) as total
+            FROM envelopes
+            WHERE budget_cycle_id = ?
+            AND is_locked = 1;
+            `,
+            [activeCycle.id]
+          );
+
+          const daysLeft = getRemainingDays(activeCycle.end_date);
+          const limit = calculateSafeDailyLimit(
+            flexibleMoneyRow?.total ?? 0,
+            daysLeft
+          );
+
+          setCycle(activeCycle);
+          setRemainingDays(daysLeft);
+          setSafeDailyLimit(limit);
+          setFlexibleMoney(flexibleMoneyRow?.total ?? 0);
+          setProtectedMoney(protectedMoneyRow?.total ?? 0);
+        } else {
+          setCycle(null);
+          setRemainingDays(0);
+          setSafeDailyLimit(0);
+          setFlexibleMoney(0);
+          setProtectedMoney(0);
+        }
+
+        setAccounts(accountRows);
       }
 
-      setAccounts(accountRows);
-    }
-
-    loadDashboard();
-  }, []);
+      loadDashboard();
+    }, [])
+  );
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -189,7 +198,7 @@ export default function DashboardScreen() {
           <View style={styles.accountList}>
             {accounts.map((account) => (
               <View key={account.id} style={styles.accountItem}>
-                <View>
+                <View style={styles.accountInfo}>
                   <Text style={styles.accountName}>{account.name}</Text>
                   <Text style={styles.accountType}>
                     {getAccountTypeLabel(account.type)}
@@ -214,6 +223,13 @@ export default function DashboardScreen() {
           today to keep this cycle safe.
         </Text>
       </Card>
+
+      <Pressable
+        onPress={() => router.push('/add-transaction')}
+        style={styles.addButton}
+      >
+        <Text style={styles.addButtonText}>Add Expense</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -291,6 +307,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
+  accountInfo: {
+    flex: 1,
+  },
   accountName: {
     fontSize: typography.body,
     fontWeight: '700',
@@ -315,5 +334,16 @@ const styles = StyleSheet.create({
   boldText: {
     fontWeight: '800',
     color: colors.textPrimary,
+  },
+  addButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 18,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: typography.body,
+    fontWeight: '800',
   },
 });
