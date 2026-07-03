@@ -126,24 +126,22 @@ export async function createIncomeTransaction(input: CreateIncomeInput) {
       `
       UPDATE envelopes
       SET
-        planned_amount = planned_amount + ?,
         remaining_amount = remaining_amount + ?,
         updated_at = ?
       WHERE id = ?;
       `,
-      [input.amount, input.amount, now, input.envelopeId]
+      [input.amount, now, input.envelopeId]
     );
 
     await tx.runAsync(
       `
       UPDATE budget_cycles
       SET
-        planned_amount = planned_amount + ?,
         actual_amount = actual_amount + ?,
         updated_at = ?
       WHERE id = ?;
       `,
-      [input.amount, input.amount, now, envelope.budget_cycle_id]
+      [input.amount, now, envelope.budget_cycle_id]
     );
   });
 }
