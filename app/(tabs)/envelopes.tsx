@@ -1,6 +1,6 @@
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Badge } from '../../src/components/ui/Badge';
 import { Card } from '../../src/components/ui/Card';
@@ -138,6 +138,7 @@ export default function EnvelopesScreen() {
   );
 
   const flexibleEnvelopes = envelopes.filter((envelope) => !envelope.is_locked);
+
   const protectedEnvelopes = envelopes.filter((envelope) =>
     Boolean(envelope.is_locked)
   );
@@ -166,13 +167,22 @@ export default function EnvelopesScreen() {
           <Text style={styles.mutedText}>Loading envelopes...</Text>
         </Card>
       ) : envelopes.length === 0 ? (
-        <Card>
-          <Text style={styles.emptyTitle}>No envelope found</Text>
-          <Text style={styles.mutedText}>
-            Complete onboarding or confirm an income to create your first budget
-            envelopes.
-          </Text>
-        </Card>
+        <>
+          <Card>
+            <Text style={styles.emptyTitle}>No envelope found</Text>
+            <Text style={styles.mutedText}>
+              Complete onboarding or confirm an income to create your first
+              budget envelopes.
+            </Text>
+          </Card>
+
+          <Pressable
+            onPress={() => router.push('/add-envelope')}
+            style={styles.addButton}
+          >
+            <Text style={styles.addButtonText}>Add Envelope</Text>
+          </Pressable>
+        </>
       ) : (
         <>
           <View style={styles.summaryGrid}>
@@ -201,9 +211,18 @@ export default function EnvelopesScreen() {
               </Text>
             </View>
 
-            {flexibleEnvelopes.map((envelope) => (
-              <EnvelopeItem key={envelope.id} envelope={envelope} />
-            ))}
+            {flexibleEnvelopes.length === 0 ? (
+              <Card>
+                <Text style={styles.mutedText}>
+                  No flexible envelope yet. Add one to start tracking daily
+                  spending.
+                </Text>
+              </Card>
+            ) : (
+              flexibleEnvelopes.map((envelope) => (
+                <EnvelopeItem key={envelope.id} envelope={envelope} />
+              ))
+            )}
           </View>
 
           <View style={styles.section}>
@@ -214,10 +233,26 @@ export default function EnvelopesScreen() {
               </Text>
             </View>
 
-            {protectedEnvelopes.map((envelope) => (
-              <EnvelopeItem key={envelope.id} envelope={envelope} />
-            ))}
+            {protectedEnvelopes.length === 0 ? (
+              <Card>
+                <Text style={styles.mutedText}>
+                  No protected envelope yet. Protected envelopes are useful for
+                  savings, bills, or subscriptions.
+                </Text>
+              </Card>
+            ) : (
+              protectedEnvelopes.map((envelope) => (
+                <EnvelopeItem key={envelope.id} envelope={envelope} />
+              ))
+            )}
           </View>
+
+          <Pressable
+            onPress={() => router.push('/add-envelope')}
+            style={styles.addButton}
+          >
+            <Text style={styles.addButtonText}>Add Envelope</Text>
+          </Pressable>
         </>
       )}
     </ScrollView>
@@ -337,5 +372,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.textPrimary,
     marginBottom: spacing.xs,
+  },
+  addButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 18,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: typography.body,
+    fontWeight: '800',
   },
 });

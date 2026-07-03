@@ -51,14 +51,23 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="onboarding" />
-      <Stack.Screen name="add-transaction" />
-      <Stack.Screen name="decision-assistant" />
-      <Stack.Screen name="income-confirmation" />
-      <Stack.Screen name="cycle-review" />
-      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-    </Stack>
-  );
+  <Stack>
+    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    <Stack.Screen name="onboarding" options={{ title: 'Onboarding' }} />
+    <Stack.Screen
+      name="income-confirmation"
+      options={{ title: 'Income Confirmation' }}
+    />
+    <Stack.Screen
+      name="add-transaction"
+      options={{ title: 'Add Transaction' }}
+    />
+    <Stack.Screen name="add-envelope" options={{ title: 'Add Envelope' }} />
+    <Stack.Screen
+      name="decision-assistant"
+      options={{ title: 'Decision Assistant' }}
+    />
+    <Stack.Screen name="cycle-review" options={{ title: 'Cycle Review' }} />
+  </Stack>
+);
 }
