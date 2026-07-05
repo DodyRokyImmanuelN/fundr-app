@@ -12,27 +12,17 @@ import { SectionHeader } from '../../src/components/ui/SectionHeader';
 
 import { colors, spacing, typography } from '../../src/constants/theme';
 import { getDatabase } from '../../src/db/database';
-import { calculateSafeDailyLimit } from '../../src/utils/calculations';
+import {
+  AssistantInsightSummary,
+  getAssistantInsightSummary,
+} from '../../src/services/assistantInsightService';
 import { formatCurrency } from '../../src/utils/currency';
-import { getRemainingDays } from '../../src/utils/date';
 
 type AccountRow = {
   id: string;
   name: string;
   type: string;
   current_balance: number;
-};
-
-type CycleRow = {
-  id: string;
-  name: string;
-  start_date: string;
-  end_date: string;
-  actual_amount: number;
-};
-
-type MoneySummaryRow = {
-  total: number;
 };
 
 function getAccountTypeLabel(type: string) {
@@ -52,96 +42,59 @@ function getAccountTypeLabel(type: string) {
 
 export default function DashboardScreen() {
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
-  const [cycle, setCycle] = useState<CycleRow | null>(null);
-  const [safeDailyLimit, setSafeDailyLimit] = useState(0);
-  const [remainingDays, setRemainingDays] = useState(0);
-  const [flexibleMoney, setFlexibleMoney] = useState(0);
-  const [protectedMoney, setProtectedMoney] = useState(0);
+  const [assistantSummary, setAssistantSummary] =
+    useState<AssistantInsightSummary | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       async function loadDashboard() {
         const db = await getDatabase();
 
-        const accountRows = await db.getAllAsync<AccountRow>(
-          `
-          SELECT id, name, type, current_balance
-          FROM accounts
-          WHERE is_archived = 0
-          ORDER BY
-            CASE type
-              WHEN 'daily_spending' THEN 1
-              WHEN 'saving' THEN 2
-              WHEN 'cash' THEN 3
-              WHEN 'ewallet' THEN 4
-              ELSE 5
-            END,
-            name ASC;
-          `
-        );
-
-        const activeCycle = await db.getFirstAsync<CycleRow>(
-          `
-          SELECT id, name, start_date, end_date, actual_amount
-          FROM budget_cycles
-          WHERE status = 'active'
-          LIMIT 1;
-          `
-        );
-
-        if (activeCycle) {
-          const flexibleMoneyRow = await db.getFirstAsync<MoneySummaryRow>(
+        const [accountRows, nextAssistantSummary] = await Promise.all([
+          db.getAllAsync<AccountRow>(
             `
-            SELECT COALESCE(SUM(remaining_amount), 0) as total
-            FROM envelopes
-            WHERE budget_cycle_id = ?
-            AND is_locked = 0;
-            `,
-            [activeCycle.id]
-          );
-
-          const protectedMoneyRow = await db.getFirstAsync<MoneySummaryRow>(
+            SELECT id, name, type, current_balance
+            FROM accounts
+            WHERE is_archived = 0
+            ORDER BY
+              CASE type
+                WHEN 'daily_spending' THEN 1
+                WHEN 'saving' THEN 2
+                WHEN 'cash' THEN 3
+                WHEN 'ewallet' THEN 4
+                ELSE 5
+              END,
+              name ASC;
             `
-            SELECT COALESCE(SUM(remaining_amount), 0) as total
-            FROM envelopes
-            WHERE budget_cycle_id = ?
-            AND is_locked = 1;
-            `,
-            [activeCycle.id]
-          );
-
-          const daysLeft = getRemainingDays(activeCycle.end_date);
-          const limit = calculateSafeDailyLimit(
-            flexibleMoneyRow?.total ?? 0,
-            daysLeft
-          );
-
-          setCycle(activeCycle);
-          setRemainingDays(daysLeft);
-          setSafeDailyLimit(limit);
-          setFlexibleMoney(flexibleMoneyRow?.total ?? 0);
-          setProtectedMoney(protectedMoneyRow?.total ?? 0);
-        } else {
-          setCycle(null);
-          setRemainingDays(0);
-          setSafeDailyLimit(0);
-          setFlexibleMoney(0);
-          setProtectedMoney(0);
-        }
+          ),
+          getAssistantInsightSummary(),
+        ]);
 
         setAccounts(accountRows);
+        setAssistantSummary(nextAssistantSummary);
       }
 
       loadDashboard();
     }, [])
   );
 
+  const activeCycle = assistantSummary?.activeCycle ?? null;
+  const safeDailyLimit = assistantSummary?.safeDailyLimit ?? 0;
+  const remainingDays = assistantSummary?.remainingDays ?? 0;
+  const flexibleMoney = assistantSummary?.flexibleMoney ?? 0;
+  const protectedMoney = assistantSummary?.protectedMoney ?? 0;
+  const assistantStatus = assistantSummary?.status ?? {
+    label: 'Safe' as const,
+    variant: 'safe' as const,
+  };
+  const topInsight = assistantSummary?.insights[0];
+
   return (
     <Screen>
       <PageHeader
         title="Fundr"
         subtitle="Your money, planned clearly."
-        trailing={<Badge label="Safe" variant="safe" />}
+        trailing={<Badge label={assistantStatus.label} variant={assistantStatus.variant} />}
       />
 
       <Card style={styles.heroCard}>
@@ -150,12 +103,14 @@ export default function DashboardScreen() {
         <Text style={styles.safeLimit}>{formatCurrency(safeDailyLimit)}</Text>
 
         <Text style={styles.mutedText}>
-          Keep spending below this amount today to keep the cycle safe.
+          {activeCycle
+            ? 'Keep spending below this amount today to keep the cycle safe.'
+            : 'Confirm income to start a cycle and calculate your daily limit.'}
         </Text>
 
-        {cycle ? (
+        {activeCycle ? (
           <Text style={styles.cycleMeta}>
-            {cycle.start_date} - {cycle.end_date}
+            {activeCycle.start_date} - {activeCycle.end_date}
           </Text>
         ) : null}
       </Card>
@@ -225,13 +180,25 @@ export default function DashboardScreen() {
       </Card>
 
       <Card>
-        <SectionHeader title="Assistant Summary" />
+        <SectionHeader title="Assistant Summary" meta={assistantStatus.label} />
 
-        <Text style={styles.assistantText}>
-          You are still on track. Keep spending below{' '}
-          <Text style={styles.boldText}>{formatCurrency(safeDailyLimit)}</Text>{' '}
-          today to keep this cycle safe.
-        </Text>
+        {topInsight ? (
+          <>
+            <Text style={styles.assistantTitle}>{topInsight.title}</Text>
+            <Text style={styles.assistantText}>{topInsight.message}</Text>
+            {topInsight.recommendation ? (
+              <Text style={styles.assistantRecommendation}>
+                {topInsight.recommendation}
+              </Text>
+            ) : null}
+          </>
+        ) : (
+          <Text style={styles.assistantText}>
+            You are still on track. Keep spending below{' '}
+            <Text style={styles.boldText}>{formatCurrency(safeDailyLimit)}</Text>{' '}
+            today to keep this cycle safe.
+          </Text>
+        )}
       </Card>
     </Screen>
   );
@@ -304,10 +271,26 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.textPrimary,
   },
+  assistantTitle: {
+    fontSize: typography.body,
+    fontWeight: '900',
+    color: colors.textPrimary,
+  },
   assistantText: {
+    marginTop: spacing.xs,
     fontSize: typography.body,
     color: colors.textSecondary,
     lineHeight: 22,
+  },
+  assistantRecommendation: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    fontSize: typography.small,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    lineHeight: 20,
   },
   boldText: {
     fontWeight: '800',
