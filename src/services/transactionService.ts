@@ -138,42 +138,5 @@ export async function createExpenseTransaction(input: CreateExpenseInput) {
       `,
       [input.amount, input.amount, now, input.envelopeId]
     );
-
-    const newUsedAmount = envelope.used_amount + input.amount;
-    const usedPercentage =
-      envelope.planned_amount > 0
-        ? Math.round((newUsedAmount / envelope.planned_amount) * 100)
-        : 0;
-
-    if (usedPercentage >= 80) {
-      await tx.runAsync(
-        `
-        INSERT INTO insights (
-          id,
-          budget_cycle_id,
-          type,
-          severity,
-          title,
-          message,
-          recommendation,
-          is_read,
-          created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-        `,
-        [
-          createId('ins'),
-          envelope.budget_cycle_id,
-          'category_warning',
-          usedPercentage >= 100 ? 'danger' : 'warning',
-          `${envelope.name} budget ${usedPercentage >= 100 ? 'reached' : 'almost used'}`,
-          `You have used ${usedPercentage}% of your ${envelope.name} budget.`,
-          usedPercentage >= 100
-            ? `Stop spending from ${envelope.name} until the next cycle if possible.`
-            : `Be careful with ${envelope.name} spending for the rest of this cycle.`,
-          0,
-          now,
-        ]
-      );
-    }
   });
 }
