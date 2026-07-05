@@ -236,6 +236,12 @@ export default function DashboardScreen() {
             style={styles.actionButton}
           />
           <AppButton
+            label="Ask Fundr"
+            variant="secondary"
+            onPress={() => router.push('/decision-assistant')}
+            style={styles.actionButton}
+          />
+          <AppButton
             label="Add Money"
             variant="success"
             onPress={() => router.push('/add-money')}
@@ -245,7 +251,7 @@ export default function DashboardScreen() {
             label="Adjust Balance"
             variant="warning"
             onPress={() => router.push('/adjust-balance')}
-            style={styles.actionButtonWide}
+            style={styles.actionButton}
           />
         </View>
       </Card>
@@ -404,10 +410,6 @@ const styles = StyleSheet.create({
   actionButton: {
     flexGrow: 1,
     flexBasis: '45%',
-  },
-  actionButtonWide: {
-    flexGrow: 1,
-    flexBasis: '100%',
   },
   accountList: {
     gap: spacing.md,
