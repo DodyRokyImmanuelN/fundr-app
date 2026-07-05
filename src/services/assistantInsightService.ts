@@ -27,6 +27,20 @@ export type AssistantStatus = {
   variant: 'safe' | 'warning' | 'danger';
 };
 
+export type AssistantSignalCounts = {
+  danger: number;
+  warning: number;
+  info: number;
+};
+
+export type AssistantDashboardSummary = {
+  headline: string;
+  message: string;
+  reason: string;
+  recommendation: string;
+  ctaLabel: string;
+};
+
 export type AssistantCycle = {
   id: string;
   name: string;
@@ -37,6 +51,8 @@ export type AssistantCycle = {
 export type AssistantInsightSummary = {
   status: AssistantStatus;
   insights: AssistantInsight[];
+  signalCounts: AssistantSignalCounts;
+  dashboardSummary: AssistantDashboardSummary;
   activeCycle: AssistantCycle | null;
   safeDailyLimit: number;
   minimumDailyLimit: number;
@@ -95,6 +111,102 @@ function sortInsights(insights: AssistantInsight[]) {
   });
 }
 
+function getSignalCounts(insights: AssistantInsight[]): AssistantSignalCounts {
+  return insights.reduce(
+    (counts, insight) => {
+      counts[insight.severity] += 1;
+      return counts;
+    },
+    {
+      danger: 0,
+      warning: 0,
+      info: 0,
+    }
+  );
+}
+
+function buildDashboardSummary(params: {
+  activeCycle: AssistantCycle | null;
+  status: AssistantStatus;
+  insights: AssistantInsight[];
+  safeDailyLimit: number;
+  minimumDailyLimit: number;
+  remainingDays: number;
+  currency: string;
+}): AssistantDashboardSummary {
+  const primaryInsight = params.insights[0];
+
+  if (!params.activeCycle) {
+    return {
+      headline: 'Set up your active cycle',
+      message: 'Fundr needs an active budget cycle before it can judge today.',
+      reason: 'No active cycle is running right now.',
+      recommendation:
+        'Confirm income first, then Fundr can calculate safe daily limits and envelope signals.',
+      ctaLabel: 'Review Insights',
+    };
+  }
+
+  if (params.status.variant === 'danger' && primaryInsight) {
+    return {
+      headline: 'Needs attention',
+      message: primaryInsight.title,
+      reason: primaryInsight.message,
+      recommendation:
+        primaryInsight.recommendation ??
+        'Review the signal before recording more spending.',
+      ctaLabel: 'Review Insights',
+    };
+  }
+
+  if (params.status.variant === 'warning' && primaryInsight) {
+    return {
+      headline: 'Worth watching',
+      message: primaryInsight.title,
+      reason: primaryInsight.message,
+      recommendation:
+        primaryInsight.recommendation ??
+        `Keep today's spending below ${formatCurrency(
+          params.safeDailyLimit,
+          params.currency
+        )}.`,
+      ctaLabel: 'Open Insights',
+    };
+  }
+
+  if (primaryInsight) {
+    return {
+      headline: 'Plan is ready',
+      message: primaryInsight.message,
+      reason: `${formatCurrency(
+        params.safeDailyLimit,
+        params.currency
+      )} is available per day for the next ${params.remainingDays} days.`,
+      recommendation:
+        primaryInsight.recommendation ??
+        'Keep the first spend intentional and record it when it happens.',
+      ctaLabel: 'Open Insights',
+    };
+  }
+
+  return {
+    headline: 'You are on track',
+    message: 'No active warning is showing for this cycle.',
+    reason: `${formatCurrency(
+      params.safeDailyLimit,
+      params.currency
+    )} is available per day, above your minimum daily limit of ${formatCurrency(
+      params.minimumDailyLimit,
+      params.currency
+    )}.`,
+    recommendation: `Keep today's spending below ${formatCurrency(
+      params.safeDailyLimit,
+      params.currency
+    )}.`,
+    ctaLabel: 'Open Insights',
+  };
+}
+
 export async function getAssistantInsightSummary(): Promise<AssistantInsightSummary> {
   const db = await getDatabase();
   const settings = await getUserSettings();
@@ -122,10 +234,21 @@ export async function getAssistantInsightSummary(): Promise<AssistantInsightSumm
         priority: 10,
       },
     ];
+    const status = getAssistantStatus(insights);
 
     return {
-      status: getAssistantStatus(insights),
+      status,
       insights,
+      signalCounts: getSignalCounts(insights),
+      dashboardSummary: buildDashboardSummary({
+        activeCycle: null,
+        status,
+        insights,
+        safeDailyLimit: 0,
+        minimumDailyLimit,
+        remainingDays: 0,
+        currency,
+      }),
       activeCycle: null,
       safeDailyLimit: 0,
       minimumDailyLimit,
@@ -271,10 +394,21 @@ export async function getAssistantInsightSummary(): Promise<AssistantInsightSumm
   }
 
   sortInsights(insights);
+  const status = getAssistantStatus(insights);
 
   return {
-    status: getAssistantStatus(insights),
+    status,
     insights,
+    signalCounts: getSignalCounts(insights),
+    dashboardSummary: buildDashboardSummary({
+      activeCycle,
+      status,
+      insights,
+      safeDailyLimit,
+      minimumDailyLimit,
+      remainingDays,
+      currency,
+    }),
     activeCycle,
     safeDailyLimit,
     minimumDailyLimit,

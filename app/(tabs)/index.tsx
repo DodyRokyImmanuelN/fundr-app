@@ -13,6 +13,7 @@ import { SectionHeader } from '../../src/components/ui/SectionHeader';
 import { colors, spacing, typography } from '../../src/constants/theme';
 import { getDatabase } from '../../src/db/database';
 import {
+  AssistantInsightSeverity,
   AssistantInsightSummary,
   getAssistantInsightSummary,
 } from '../../src/services/assistantInsightService';
@@ -37,6 +38,63 @@ function getAccountTypeLabel(type: string) {
       return 'E-Wallet';
     default:
       return 'Other';
+  }
+}
+
+function getAssistantHeroStyle(variant: 'safe' | 'warning' | 'danger') {
+  switch (variant) {
+    case 'danger':
+      return {
+        backgroundColor: colors.dangerMuted,
+        borderColor: colors.dangerSoft,
+      };
+    case 'warning':
+      return {
+        backgroundColor: colors.warningMuted,
+        borderColor: colors.warningSoft,
+      };
+    case 'safe':
+    default:
+      return {
+        backgroundColor: colors.primaryMuted,
+        borderColor: colors.primarySoft,
+      };
+  }
+}
+
+function getAssistantButtonVariant(variant: 'safe' | 'warning' | 'danger') {
+  switch (variant) {
+    case 'danger':
+      return 'danger';
+    case 'warning':
+      return 'warning';
+    case 'safe':
+    default:
+      return 'primary';
+  }
+}
+
+function getSignalCountText(summary: AssistantInsightSummary | null) {
+  if (!summary) return 'Loading';
+
+  const { danger, warning, info } = summary.signalCounts;
+
+  if (danger > 0) return `${danger} danger`;
+  if (warning > 0) return `${warning} warning`;
+  if (info > 0) return `${info} info`;
+
+  return 'No warnings';
+}
+
+function getInsightBadgeLabel(severity: AssistantInsightSeverity) {
+  switch (severity) {
+    case 'danger':
+      return 'Danger';
+    case 'warning':
+      return 'Watch';
+    case 'info':
+    default:
+      return 'Info';
   }
 }
 
@@ -87,7 +145,15 @@ export default function DashboardScreen() {
     label: 'Safe' as const,
     variant: 'safe' as const,
   };
-  const topInsight = assistantSummary?.insights[0];
+  const dashboardSummary = assistantSummary?.dashboardSummary ?? {
+    headline: 'Loading assistant',
+    message: 'Checking your latest cycle data.',
+    reason: 'Fundr is reading your envelopes, transactions, and settings.',
+    recommendation: 'Give it a moment.',
+    ctaLabel: 'Open Insights',
+  };
+  const topInsights = assistantSummary?.insights.slice(0, 2) ?? [];
+  const signalCountText = getSignalCountText(assistantSummary);
 
   return (
     <Screen>
@@ -97,15 +163,39 @@ export default function DashboardScreen() {
         trailing={<Badge label={assistantStatus.label} variant={assistantStatus.variant} />}
       />
 
-      <Card style={styles.heroCard}>
-        <SectionHeader title="Safe Daily Limit" meta={`${remainingDays} days left`} />
+      <Card style={[styles.assistantHero, getAssistantHeroStyle(assistantStatus.variant)]}>
+        <View style={styles.assistantHeroHeader}>
+          <View style={styles.assistantHeroTitleWrapper}>
+            <Text style={styles.eyebrow}>Assistant Status</Text>
+            <Text style={styles.assistantHeadline}>
+              {dashboardSummary.headline}
+            </Text>
+          </View>
 
-        <Text style={styles.safeLimit}>{formatCurrency(safeDailyLimit)}</Text>
+          <Badge label={assistantStatus.label} variant={assistantStatus.variant} />
+        </View>
 
-        <Text style={styles.mutedText}>
-          {activeCycle
-            ? 'Keep spending below this amount today to keep the cycle safe.'
-            : 'Confirm income to start a cycle and calculate your daily limit.'}
+        <Text style={styles.assistantLead}>{dashboardSummary.message}</Text>
+
+        <View style={styles.reasonPanel}>
+          <Text style={styles.reasonLabel}>Why this status</Text>
+          <Text style={styles.reasonText}>{dashboardSummary.reason}</Text>
+        </View>
+
+        <View style={styles.limitPanel}>
+          <View style={styles.limitItem}>
+            <Text style={styles.metricLabel}>Safe daily limit</Text>
+            <Text style={styles.safeLimit}>{formatCurrency(safeDailyLimit)}</Text>
+          </View>
+
+          <View style={styles.limitItemRight}>
+            <Text style={styles.metricLabel}>Days left</Text>
+            <Text style={styles.daysLeft}>{remainingDays}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.assistantRecommendation}>
+          {dashboardSummary.recommendation}
         </Text>
 
         {activeCycle ? (
@@ -113,6 +203,12 @@ export default function DashboardScreen() {
             {activeCycle.start_date} - {activeCycle.end_date}
           </Text>
         ) : null}
+
+        <AppButton
+          label={dashboardSummary.ctaLabel}
+          variant={getAssistantButtonVariant(assistantStatus.variant)}
+          onPress={() => router.push('/insights')}
+        />
       </Card>
 
       <View style={styles.moneyGrid}>
@@ -180,21 +276,27 @@ export default function DashboardScreen() {
       </Card>
 
       <Card>
-        <SectionHeader title="Assistant Summary" meta={assistantStatus.label} />
+        <SectionHeader title="Active Signals" meta={signalCountText} />
 
-        {topInsight ? (
-          <>
-            <Text style={styles.assistantTitle}>{topInsight.title}</Text>
-            <Text style={styles.assistantText}>{topInsight.message}</Text>
-            {topInsight.recommendation ? (
-              <Text style={styles.assistantRecommendation}>
-                {topInsight.recommendation}
-              </Text>
-            ) : null}
-          </>
+        {topInsights.length > 0 ? (
+          <View style={styles.signalList}>
+            {topInsights.map((insight) => (
+              <View key={insight.id} style={styles.signalItem}>
+                <View style={styles.signalCopy}>
+                  <Text style={styles.signalTitle}>{insight.title}</Text>
+                  <Text style={styles.signalMessage}>{insight.message}</Text>
+                </View>
+
+                <Badge
+                  label={getInsightBadgeLabel(insight.severity)}
+                  variant={insight.severity === 'info' ? 'info' : insight.severity}
+                />
+              </View>
+            ))}
+          </View>
         ) : (
           <Text style={styles.assistantText}>
-            You are still on track. Keep spending below{' '}
+            No active warning right now. Keep spending below{' '}
             <Text style={styles.boldText}>{formatCurrency(safeDailyLimit)}</Text>{' '}
             today to keep this cycle safe.
           </Text>
@@ -205,9 +307,70 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  heroCard: {
-    backgroundColor: colors.primaryMuted,
-    borderColor: colors.primarySoft,
+  assistantHero: {
+    gap: spacing.md,
+  },
+  assistantHeroHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  assistantHeroTitleWrapper: {
+    flex: 1,
+  },
+  eyebrow: {
+    fontSize: typography.tiny,
+    fontWeight: '900',
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+  },
+  assistantHeadline: {
+    marginTop: spacing.xs,
+    fontSize: 28,
+    fontWeight: '900',
+    color: colors.textPrimary,
+  },
+  assistantLead: {
+    fontSize: typography.body,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    lineHeight: 22,
+  },
+  reasonPanel: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  reasonLabel: {
+    fontSize: typography.tiny,
+    fontWeight: '900',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+  },
+  reasonText: {
+    fontSize: typography.small,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  limitPanel: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  limitItem: {
+    flex: 1,
+  },
+  limitItemRight: {
+    alignItems: 'flex-end',
+  },
+  metricLabel: {
+    fontSize: typography.tiny,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
   },
   mutedText: {
     fontSize: typography.small,
@@ -227,6 +390,11 @@ const styles = StyleSheet.create({
     fontSize: 34,
     fontWeight: '900',
     color: colors.primary,
+  },
+  daysLeft: {
+    fontSize: 34,
+    fontWeight: '900',
+    color: colors.textPrimary,
   },
   actionGrid: {
     flexDirection: 'row',
@@ -271,11 +439,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.textPrimary,
   },
-  assistantTitle: {
-    fontSize: typography.body,
-    fontWeight: '900',
-    color: colors.textPrimary,
-  },
   assistantText: {
     marginTop: spacing.xs,
     fontSize: typography.body,
@@ -290,6 +453,32 @@ const styles = StyleSheet.create({
     fontSize: typography.small,
     fontWeight: '700',
     color: colors.textPrimary,
+    lineHeight: 20,
+  },
+  signalList: {
+    gap: spacing.md,
+  },
+  signalItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  signalCopy: {
+    flex: 1,
+  },
+  signalTitle: {
+    fontSize: typography.body,
+    fontWeight: '900',
+    color: colors.textPrimary,
+  },
+  signalMessage: {
+    marginTop: spacing.xs,
+    fontSize: typography.small,
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   boldText: {
