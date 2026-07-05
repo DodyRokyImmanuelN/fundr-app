@@ -65,10 +65,8 @@ export default function RootLayout() {
     <Stack.Screen name="add-money" options={{ title: 'Add Money' }} />
     <Stack.Screen name="adjust-balance" options={{ title: 'Adjust Balance' }} />
     <Stack.Screen name="add-envelope" options={{ title: 'Add Envelope' }} />
-    <Stack.Screen
-      name="decision-assistant"
-      options={{ title: 'Decision Assistant' }}
-    />
+    <Stack.Screen name="adjust-envelope-allocation" options={{ title: 'Adjust Allocation' }} />
+    <Stack.Screen name="decision-assistant" options={{ title: 'Decision Assistant' }} />
     <Stack.Screen name="cycle-review" options={{ title: 'Cycle Review' }} />
   </Stack>
 );
