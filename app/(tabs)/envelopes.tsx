@@ -118,6 +118,16 @@ function EnvelopeItem({ envelope }: { envelope: EnvelopeWithAccount }) {
           <Text style={styles.mutedText}>{usedPercentage}%</Text>
         </View>
       </View>
+      <AppButton
+        label="Adjust Allocation"
+        variant="secondary"
+        onPress={() =>
+          router.push({
+            pathname: '/adjust-envelope-allocation',
+            params: { envelopeId: envelope.id },
+          })
+        }
+      />
     </Card>
   );
 }
