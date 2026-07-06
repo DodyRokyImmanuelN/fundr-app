@@ -282,6 +282,13 @@ export default function DashboardScreen() {
             onPress={() => router.push('/income-confirmation')}
             style={styles.actionButton}
           />
+
+          <AppButton
+            label="Cycle Review"
+            variant="secondary"
+            onPress={() => router.push('/cycle-review')}
+            style={styles.actionButton}
+          />
         </View>
       </Card>
 
