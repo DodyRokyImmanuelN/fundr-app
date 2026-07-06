@@ -2,9 +2,9 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { MoneyCard } from '../../src/components/dashboard/MoneyCard';
 import { PageHeader } from '../../src/components/layout/PageHeader';
 import { Screen } from '../../src/components/layout/Screen';
-import { MoneyCard } from '../../src/components/dashboard/MoneyCard';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { Badge } from '../../src/components/ui/Badge';
 import { Card } from '../../src/components/ui/Card';
@@ -141,10 +141,12 @@ export default function DashboardScreen() {
   const remainingDays = assistantSummary?.remainingDays ?? 0;
   const flexibleMoney = assistantSummary?.flexibleMoney ?? 0;
   const protectedMoney = assistantSummary?.protectedMoney ?? 0;
+
   const assistantStatus = assistantSummary?.status ?? {
     label: 'Safe' as const,
     variant: 'safe' as const,
   };
+
   const dashboardSummary = assistantSummary?.dashboardSummary ?? {
     headline: 'Loading assistant',
     message: 'Checking your latest cycle data.',
@@ -152,6 +154,7 @@ export default function DashboardScreen() {
     recommendation: 'Give it a moment.',
     ctaLabel: 'Open Insights',
   };
+
   const topInsights = assistantSummary?.insights.slice(0, 2) ?? [];
   const signalCountText = getSignalCountText(assistantSummary);
 
@@ -160,10 +163,20 @@ export default function DashboardScreen() {
       <PageHeader
         title="Fundr"
         subtitle="Your money, planned clearly."
-        trailing={<Badge label={assistantStatus.label} variant={assistantStatus.variant} />}
+        trailing={
+          <Badge
+            label={assistantStatus.label}
+            variant={assistantStatus.variant}
+          />
+        }
       />
 
-      <Card style={[styles.assistantHero, getAssistantHeroStyle(assistantStatus.variant)]}>
+      <Card
+        style={[
+          styles.assistantHero,
+          getAssistantHeroStyle(assistantStatus.variant),
+        ]}
+      >
         <View style={styles.assistantHeroHeader}>
           <View style={styles.assistantHeroTitleWrapper}>
             <Text style={styles.eyebrow}>Assistant Status</Text>
@@ -172,7 +185,10 @@ export default function DashboardScreen() {
             </Text>
           </View>
 
-          <Badge label={assistantStatus.label} variant={assistantStatus.variant} />
+          <Badge
+            label={assistantStatus.label}
+            variant={assistantStatus.variant}
+          />
         </View>
 
         <Text style={styles.assistantLead}>{dashboardSummary.message}</Text>
@@ -185,7 +201,9 @@ export default function DashboardScreen() {
         <View style={styles.limitPanel}>
           <View style={styles.limitItem}>
             <Text style={styles.metricLabel}>Safe daily limit</Text>
-            <Text style={styles.safeLimit}>{formatCurrency(safeDailyLimit)}</Text>
+            <Text style={styles.safeLimit}>
+              {formatCurrency(safeDailyLimit)}
+            </Text>
           </View>
 
           <View style={styles.limitItemRight}>
@@ -229,28 +247,39 @@ export default function DashboardScreen() {
 
       <Card>
         <SectionHeader title="Quick Actions" />
+
         <View style={styles.actionGrid}>
           <AppButton
             label="Add Expense"
             onPress={() => router.push('/add-transaction')}
             style={styles.actionButton}
           />
+
           <AppButton
             label="Ask Fundr"
             variant="secondary"
             onPress={() => router.push('/decision-assistant')}
             style={styles.actionButton}
           />
+
           <AppButton
             label="Add Money"
             variant="success"
             onPress={() => router.push('/add-money')}
             style={styles.actionButton}
           />
+
           <AppButton
             label="Adjust Balance"
             variant="warning"
             onPress={() => router.push('/adjust-balance')}
+            style={styles.actionButton}
+          />
+
+          <AppButton
+            label="Confirm Income"
+            variant="success"
+            onPress={() => router.push('/income-confirmation')}
             style={styles.actionButton}
           />
         </View>
@@ -295,7 +324,11 @@ export default function DashboardScreen() {
 
                 <Badge
                   label={getInsightBadgeLabel(insight.severity)}
-                  variant={insight.severity === 'info' ? 'info' : insight.severity}
+                  variant={
+                    insight.severity === 'info'
+                      ? 'info'
+                      : insight.severity
+                  }
                 />
               </View>
             ))}
@@ -303,7 +336,9 @@ export default function DashboardScreen() {
         ) : (
           <Text style={styles.assistantText}>
             No active warning right now. Keep spending below{' '}
-            <Text style={styles.boldText}>{formatCurrency(safeDailyLimit)}</Text>{' '}
+            <Text style={styles.boldText}>
+              {formatCurrency(safeDailyLimit)}
+            </Text>{' '}
             today to keep this cycle safe.
           </Text>
         )}
