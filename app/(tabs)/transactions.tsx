@@ -16,6 +16,8 @@ import { formatCurrency } from '../../src/utils/currency';
 function getTransactionTitle(transaction: TransactionWithDetails) {
   if (transaction.type === 'income') {
     switch (transaction.category) {
+      case 'regular_income':
+        return 'Regular Income';
       case 'freelance':
         return 'Freelance Income';
       case 'gift':
@@ -31,19 +33,47 @@ function getTransactionTitle(transaction: TransactionWithDetails) {
 
   if (transaction.type === 'adjustment') {
     return transaction.category === 'balance_increase'
-      ? 'Balance Adjustment'
-      : 'Balance Correction';
+      ? 'Balance Adjustment In'
+      : 'Balance Adjustment Out';
+  }
+
+  if (transaction.type === 'transfer') {
+    switch (transaction.category) {
+      case 'allocation_increase':
+      case 'allocation_decrease':
+        return 'Allocation Transfer';
+      default:
+        return 'Transfer';
+    }
   }
 
   return transaction.envelope_name ?? transaction.category ?? 'Expense';
 }
 
-function isPositiveTransaction(transaction: TransactionWithDetails) {
-  return (
-    transaction.type === 'income' ||
-    (transaction.type === 'adjustment' &&
-      transaction.category === 'balance_increase')
-  );
+function getTransactionTone(transaction: TransactionWithDetails) {
+  if (transaction.type === 'income') {
+    return 'positive';
+  }
+
+  if (transaction.type === 'expense') {
+    return 'negative';
+  }
+
+  if (transaction.type === 'adjustment') {
+    return transaction.category === 'balance_increase'
+      ? 'positive'
+      : 'negative';
+  }
+
+  return 'neutral';
+}
+
+function getTransactionSign(transaction: TransactionWithDetails) {
+  const tone = getTransactionTone(transaction);
+
+  if (tone === 'positive') return '+';
+  if (tone === 'negative') return '-';
+  return '';
 }
 
 export default function TransactionsScreen() {
@@ -64,7 +94,7 @@ export default function TransactionsScreen() {
     <Screen>
       <PageHeader
         title="Transactions"
-        subtitle="Track expenses, extra money, and balance corrections."
+        subtitle="Track expenses, extra money, regular income, and balance corrections."
       />
 
       <View style={styles.actionRow}>
@@ -87,19 +117,29 @@ export default function TransactionsScreen() {
           onPress={() => router.push('/adjust-balance')}
           style={[styles.actionButton, styles.adjustButton]}
         />
+
+        <AppButton
+          label="Confirm Income"
+          variant="success"
+          onPress={() => router.push('/income-confirmation')}
+          style={[styles.actionButton, styles.incomeButton]}
+        />
       </View>
 
       {transactions.length === 0 ? (
         <Card muted>
           <Text style={styles.emptyTitle}>No transaction yet</Text>
           <Text style={styles.mutedText}>
-            Add your first expense or money in to start tracking your money flow.
+            Add your first expense, money in, or confirmed income to start
+            tracking your money flow.
           </Text>
         </Card>
       ) : (
         <View style={styles.transactionList}>
           {transactions.map((transaction) => {
-            const isPositive = isPositiveTransaction(transaction);
+            const tone = getTransactionTone(transaction);
+            const sign = getTransactionSign(transaction);
+            const displayAmount = Math.abs(transaction.amount);
 
             return (
               <Card key={transaction.id}>
@@ -129,11 +169,13 @@ export default function TransactionsScreen() {
                   <Text
                     style={[
                       styles.transactionAmount,
-                      isPositive ? styles.incomeAmount : styles.expenseAmount,
+                      tone === 'positive' ? styles.incomeAmount : undefined,
+                      tone === 'negative' ? styles.expenseAmount : undefined,
+                      tone === 'neutral' ? styles.neutralAmount : undefined,
                     ]}
                   >
-                    {isPositive ? '+' : '-'}
-                    {formatCurrency(transaction.amount)}
+                    {sign}
+                    {formatCurrency(displayAmount)}
                   </Text>
                 </View>
               </Card>
@@ -163,7 +205,9 @@ const styles = StyleSheet.create({
   },
   adjustButton: {
     backgroundColor: colors.warning,
-    flexBasis: '100%',
+  },
+  incomeButton: {
+    backgroundColor: colors.success,
   },
   emptyTitle: {
     fontSize: typography.subheading,
@@ -211,5 +255,8 @@ const styles = StyleSheet.create({
   },
   expenseAmount: {
     color: colors.danger,
+  },
+  neutralAmount: {
+    color: colors.textSecondary,
   },
 });
